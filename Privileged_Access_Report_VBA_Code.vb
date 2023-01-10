@@ -71,7 +71,6 @@ ThisWorkBook
 			lDS_Alias = "DS_3"
 		ElseIf Sh.Name = "Export" Then
 			lDS_Alias = "DS_2"
-			Call Remove_Hash_Characters
 		ElseIf Sh.Name = "Changelog" Then
 			lDS_Alias = "DS_4"
 		ElseIf Sh.Name = "Sensitive Profiles" Then
@@ -95,6 +94,8 @@ ThisWorkBook
 			
 			If Sh.Name = "Edit" Then
 				Call DataValidationList
+			ElseIf Sh.Name = "Export" Then
+				Call Remove_Hash_Characters
 			End If
 			
 			EndTime = Timer
