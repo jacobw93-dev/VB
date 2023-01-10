@@ -69,7 +69,6 @@ Private Sub Workbook_SheetActivate(ByVal Sh As Object)
     
     If Sh.Name = "Edit" Then
         lDS_Alias = "DS_3"
-        Call DataValidationList
     ElseIf Sh.Name = "Export" Then
         lDS_Alias = "DS_2"
         Call Remove_Hash_Characters
@@ -93,6 +92,10 @@ Private Sub Workbook_SheetActivate(ByVal Sh As Object)
         For Each ws In Application.ActiveWorkbook.Worksheets
             ws.PageSetup.CenterHeader = "QueryLastRefreshedAt: " & Format(lRefreshDate, "dddd, mmmm d, yyyy h:mm:ss")
         Next
+        
+        If Sh.Name = "Edit" Then
+            Call DataValidationList
+        End If
         
         EndTime = Timer
         '        wb.Sheets("Edit").Range("E1").Value = Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]"
