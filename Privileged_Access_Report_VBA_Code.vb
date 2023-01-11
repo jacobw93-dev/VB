@@ -258,7 +258,7 @@ Module1
 		
 		If ActiveSheet.Range("S2").Comment Is Nothing Then
 			ActiveSheet.Range("S2").AddCommentThreaded ( _
-				"0 - Not approved;" & vbCrLf & "1 - Pending approval;" & vbCrLf & "2 - Approved;" _
+				"0 - Not approved;" & vbLf & "1 - Pending approval;" & vbLf & "2 - Approved;" _
 				)
 		End If
 		
