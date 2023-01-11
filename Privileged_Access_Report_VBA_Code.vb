@@ -39,45 +39,58 @@ ThisWorkBook
 		ActiveSheet.Range("A1").Activate
 		
 		Call DataValidationList
-		
-	'    MsgBox "Before working With ""Edit"" tab, please make sure You are connected to the system"
-		
+
 		ActiveSheet.Range("A1").Activate
 		
 		Call OnEnd
 		
 	End Sub
 
-	Private Sub Workbook_SheetActivate(ByVal Sh As Object)
+	Public Sub Workbook_SheetActivate(ByVal Sh As Object)
 		
 		Dim lResult     As Long
 		Dim lRefreshDate As Double
 		Dim lDS_Alias   As String
+		Dim lSeparator  As String * 1
+		Dim lSeparator_Count As Integer
+		Dim item        As Variant, arr, c As Collection
+		Dim rng As Range
 		
-		Dim AckTime As Integer, InfoBox As Object
+		Dim AckTime     As Integer, InfoBox As Object
 		Set InfoBox = CreateObject("WScript.Shell")
 		AckTime = 5
-		Select Case InfoBox.Popup("Refresh on tab """ & Sh.Name & """ in progress...", _
-		AckTime, "Data refresh", 0)
+		Select Case InfoBox.Popup("Refresh On tab """ & Sh.Name & """ in progress...", _
+			   AckTime, "Data refresh", 0)
 		End Select
-		
-	'    MsgBox Prompt:="Data refresh on tab """ & Sh.Name & """ in progress..."
 		
 		Call OnStart
 		
 		lResult = Application.Run("SAPSetRefreshBehaviour", "On")
 		
-		If Sh.Name = "Edit" Then
-			lDS_Alias = "DS_3"
-		ElseIf Sh.Name = "Export" Then
-			lDS_Alias = "DS_2"
-		ElseIf Sh.Name = "Changelog" Then
-			lDS_Alias = "DS_4"
-		ElseIf Sh.Name = "Sensitive Profiles" Then
-			lDS_Alias = "DS_5"
+		Select Case Sh.Name
+			Case "Edit"
+				lDS_Alias = "DS_3"
+			Case "Export"
+				lDS_Alias = "DS_1;DS_2"
+			Case "Changelog"
+				lDS_Alias = "DS_4"
+			Case "Sensitive Profiles"
+				lDS_Alias = "DS_5"
+		End Select
+		
+		lSeparator = ";"
+		lSeparator_Count = Len(lDS_Alias) - Len(Replace(lDS_Alias, lSeparator, ""))
+		
+		If lSeparator_Count > 0 Then
+			arr = Split(lDS_Alias, lSeparator)
+			For Each item In arr
+				lResult = Application.Run("SAPGetProperty", "IsConnected", item) And lResult
+			Next item
+		Else
+			lResult = Application.Run("SAPGetProperty", "IsConnected", lDS_Alias)
 		End If
 		
-		lResult = Application.Run("SAPGetProperty", "IsConnected", lDS_Alias)
+		lResult = CBool(lResult)
 		
 		If lResult = True Then
 			
@@ -87,7 +100,17 @@ ThisWorkBook
 			lResult = Application.Run("SAPExecuteCommand", "RefreshData", lDS_Alias)
 			lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
 			
-			lRefreshDate = Application.Run("SAPGetSourceInfo", lDS_Alias, "QueryLastRefreshedAt")
+			Select Case Sh.Name
+				Case "Export"
+					lDS_Alias = "DS_2"
+					lRefreshDate = Application.Run("SAPGetSourceInfo", lDS_Alias, "QueryLastRefreshedAt")
+					Set rng = ThisWorkbook.Sheets("Export").Range("A1", Range("A1").End(xlDown).End(xlToRight).End(xlDown).End(xlToRight).End(xlDown))
+	'                Debug.Print (rng.Address)
+					ThisWorkbook.Sheets("Export").PageSetup.PrintArea = rng.Address
+				Case Else
+					lRefreshDate = Application.Run("SAPGetSourceInfo", lDS_Alias, "QueryLastRefreshedAt")
+			End Select
+			
 			For Each ws In Application.ActiveWorkbook.Worksheets
 				ws.PageSetup.CenterHeader = "QueryLastRefreshedAt: " & Format(lRefreshDate, "dddd, mmmm d, yyyy h:mm:ss")
 			Next
@@ -105,9 +128,7 @@ ThisWorkBook
 		Else
 			MsgBox "You are Not connected To the system"
 		End If
-		
-	'    MsgBox Prompt:="Data refresh on tab """ & Sh.Name & """ finished..."
-		
+
 	End Sub
 
 -------------
