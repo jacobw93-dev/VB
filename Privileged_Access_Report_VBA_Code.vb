@@ -235,6 +235,12 @@ Module1
 			.ShowError = True
 		End With
 		
+		If ActiveSheet.Range("S2").Comment Is Nothing Then
+			ActiveSheet.Range("S2").AddCommentThreaded ( _
+				"0 - Not approved;" & vbCrLf & "1 - Pending approval;" & vbCrLf & "2 - Approved;" _
+				)
+		End If
+		
 		Call OnEnd
 		
 	End Sub
