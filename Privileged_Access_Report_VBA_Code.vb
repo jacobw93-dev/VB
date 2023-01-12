@@ -1,21 +1,15 @@
 ThisWorkBook
 
 	Public Sub Workbook_open()
+
 		Dim wb          As Workbook
 		Dim ws          As Worksheet
 		
 		Dim lResult     As Long
 		Dim addin       As COMAddIn
-		
-		Set wb = ThisWorkbook
+		Dim rng As Range
 		
 		Call OnStart
-		
-		For Each ws In ActiveWorkbook.Worksheets
-			ActiveSheet.Unprotect
-			ws.Cells.Locked = False
-			ws.Cells.FormulaHidden = False
-		Next ws
 		
 		For Each addin In Application.COMAddIns
 			If addin.progID = "SapExcelAddIn" Then
@@ -31,16 +25,13 @@ ThisWorkBook
 		lResult = Application.Run("SAPLogOff", "True")
 		lResult = Application.Run("SAPExecuteCommand", "Refresh", "All")
 		lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
-		lResult = Application.Run("SAPExecuteCommand", "Show", "Ribbon", "All")
-		lResult = Application.Run("SAPExecuteCommand", "Show", "TaskPane", "Default")
 		
-		wb.Activate
-		wb.Sheets("Edit").Activate
-		ActiveSheet.Range("A1").Activate
+		With ThisWorkbook.Sheets("Edit")
+			Set rng = Range("A1")
+			rng.Select
+		End With
 		
 		Call DataValidationList
-
-		ActiveSheet.Range("A1").Activate
 		
 		Call OnEnd
 		
@@ -48,22 +39,24 @@ ThisWorkBook
 
 	Public Sub Workbook_SheetActivate(ByVal Sh As Object)
 		
-		Dim lResult     As Long
+		Dim lResult     As Long, lRet As Boolean
 		Dim lRefreshDate As Double
 		Dim lDS_Alias   As String
 		Dim lSeparator  As String * 1
 		Dim lSeparator_Count As Integer
 		Dim item        As Variant, arr, c As Collection
-		Dim rng As Range
+		Dim rng         As Range
 		
 		Dim AckTime     As Integer, InfoBox As Object
-		Set InfoBox = CreateObject("WScript.Shell")
-		AckTime = 5
-		Select Case InfoBox.Popup("Refresh On tab """ & Sh.Name & """ in progress...", _
-			   AckTime, "Data refresh", 0)
-		End Select
 		
 		Call OnStart
+		
+		Set InfoBox = CreateObject("WScript.Shell")
+		AckTime = 5
+		Select Case InfoBox.Popup("Refresh On tab """ & Sh.Name & """ in progress..." _
+			 & vbCrLf & vbCrLf & "(This window will close in 5 seconds)", _
+			   AckTime, "Data refresh", 0)
+		End Select
 		
 		lResult = Application.Run("SAPSetRefreshBehaviour", "On")
 		
@@ -80,19 +73,18 @@ ThisWorkBook
 		
 		lSeparator = ";"
 		lSeparator_Count = Len(lDS_Alias) - Len(Replace(lDS_Alias, lSeparator, ""))
+		lRet = True
 		
 		If lSeparator_Count > 0 Then
 			arr = Split(lDS_Alias, lSeparator)
 			For Each item In arr
-				lResult = Application.Run("SAPGetProperty", "IsConnected", item) And lResult
+				lRet = Application.Run("SAPGetProperty", "IsConnected", item) And lRet
 			Next item
 		Else
-			lResult = Application.Run("SAPGetProperty", "IsConnected", lDS_Alias)
+			lRet = Application.Run("SAPGetProperty", "IsConnected", lDS_Alias)
 		End If
 		
-		lResult = CBool(lResult)
-		
-		If lResult = True Then
+		If lRet = True Then
 			
 			StartTime = Timer
 			
@@ -105,7 +97,7 @@ ThisWorkBook
 					lDS_Alias = "DS_2"
 					lRefreshDate = Application.Run("SAPGetSourceInfo", lDS_Alias, "QueryLastRefreshedAt")
 					Set rng = ThisWorkbook.Sheets("Export").Range("A1", Range("A1").End(xlDown).End(xlToRight).End(xlDown).End(xlToRight).End(xlDown))
-	'                Debug.Print (rng.Address)
+					'                Debug.Print (rng.Address)
 					ThisWorkbook.Sheets("Export").PageSetup.PrintArea = rng.Address
 				Case Else
 					lRefreshDate = Application.Run("SAPGetSourceInfo", lDS_Alias, "QueryLastRefreshedAt")
@@ -117,17 +109,28 @@ ThisWorkBook
 			
 			If Sh.Name = "Edit" Then
 				Call DataValidationList
+				Call LockSheets
 			ElseIf Sh.Name = "Export" Then
 				Call Remove_Hash_Characters
+				Call RestoreLineBreaks
 			End If
 			
 			EndTime = Timer
-			'        wb.Sheets("Edit").Range("E1").Value = Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]"
-			MsgBox "Data refreshed in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]"
-			
+			Select Case InfoBox.Popup("Data refreshed in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
+				 & vbCrLf & vbCrLf & "(This window will close in 5 seconds)", _
+				   AckTime, "Data refresh", 0)
+		End Select
+		
 		Else
-			MsgBox "You are Not connected To the system"
+			Select Case InfoBox.Popup("You are not connected to the system" _
+				 & vbCrLf & vbCrLf & "(This window will close in 5 seconds)", _
+				   AckTime, "Connection status", 0)
+			End Select
+			lResult = Application.Run("SAPLogOff", "True")
+			lResult = Application.Run("SAPExecuteCommand", "Refresh", "All")
 		End If
+		
+		Call OnEnd
 
 	End Sub
 
@@ -136,12 +139,28 @@ Sheet3(Edit)
 
 	Private Sub CommandButton1_Click()
 		
-		Dim lResult     As Long
-		Dim range_1 As Range
+		Dim lResult     As Long, lRet As Boolean
+		Dim range_1     As Range
+		Dim i           As Integer, ds As String, ds_concat As String
 		
 		Call OnStart
+		Call UnlockSheets
 		
-		lResult = Application.Run("SAPGetProperty", "IsConnected", "DS_2")
+		lRet = True
+		
+		For i = 1 To 5
+			ds = "DS_" & i
+			lResult = Application.Run("SAPGetProperty", "IsConnected", ds)
+			lRet = lRet And lResult
+			If lResult = False Then
+				ds_concat = ds & ", " & ds_concat
+			End If
+		Next i
+		
+		If ds_concat <> "" Then
+			MsgBox "Data Sources: """ & ds_concat & """ are inactive"
+		End If
+		
 		If lResult = False Then
 			
 			ThisWorkbook.Sheets("Edit").Activate
@@ -153,12 +172,11 @@ Sheet3(Edit)
 			
 			Call DataValidationList
 			
-			ActiveSheet.Range("A1").Activate
-			
 		Else
-			MsgBox "You are already connected to the system"
+			MsgBox "You are already connected To the system"
 		End If
 		
+		Call LockSheets
 		Call OnEnd
 		
 	End Sub
@@ -170,62 +188,127 @@ Sheet3(Edit)
 		Dim StartTime   As Double
 		Dim EndTime     As Double
 		Dim wb          As Workbook
+		Dim AckTime     As Integer, InfoBox As Object
 		
 		Set wb = ThisWorkbook
 		
 		Call OnStart
+		Call UnlockSheets
 		
 		lResult = Application.Run("SAPGetProperty", "IsConnected", "DS_2")
 		If lResult = True Then
 			
 			StartTime = Timer
-			
 			lResult = Application.Run("SAPSetRefreshBehaviour", "On")
 			lResult = Application.Run("SAPExecuteCommand", "PlanDataSave")
-	'
 			lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
-
-		
+			
 			Call DataValidationList
 			Call Remove_Hash_Characters
 			
-			ActiveSheet.Range("A1").Activate
-			
 			EndTime = Timer
 			wb.Sheets("Edit").Range("E1").Value = Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]"
-			MsgBox "Data saved in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]"
+			
+			Set InfoBox = CreateObject("WScript.Shell")
+			AckTime = 5
+			Select Case InfoBox.Popup("Data saved in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
+				 & vbCrLf & vbCrLf & "(This window will close in 5 seconds)", _
+				   AckTime, "Data saved", 0)
+		End Select
 		
-		Else
+	Else
+		MsgBox "You are not connected to the system"
+	End If
+
+	Call LockSheets
+	Call OnEnd
+
+	End Sub
+
+	Private Sub Worksheet_Change(ByVal Target As Range)
+		
+		Dim ValidatedCells As Range
+		Dim Cell        As Range
+		
+		Set ValidatedCells = Intersect(Target, Target.Parent.Range("Q:R,T:V"))
+		If Not ValidatedCells Is Nothing Then
 			
-			MsgBox "You are not connected to the system"
+			For Each Cell In ValidatedCells
+				If Not Len(Cell.Value) <= 250 Then
+					MsgBox "The value" & _
+						   " inserted in cell " & Cell.Address & _
+						   " exceeds accepted field length by " & _
+						   Len(Cell.Value) - 250 & " characters." & _
+						   vbCrLf & vbCrLf & "Undo!", vbCritical
+					Application.Undo
+					Exit Sub
+				End If
+			Next Cell
 			
+			For Each Cell In ValidatedCells.Cells
+				If Len(Replace(Replace(Cell.Value, vbCr, ""), vbLf, "")) <> Len(Cell.Value) Then
+					Cell.Value = Replace(Replace(Cell.Value, vbCr, "&&"), vbLf, "&&")
+				End If
+			Next Cell
 		End If
-		
-		Call OnEnd
-		
 	End Sub
 
 -------------
 Module1
 
-	Public Sub OnStart()
+	Public Sub UnlockSheets()
+		Dim wb          As Workbook
+		Dim ws          As Worksheet
+		
+		Set wb = ThisWorkbook
+		
+		For Each ws In ActiveWorkbook.Worksheets
+			ActiveSheet.Unprotect
+			If ws.Cells.Locked = True Then
+				ws.Cells.Locked = False
+			End If
+			If ws.Cells.FormulaHidden = True Then
+				ws.Cells.FormulaHidden = False
+			End If
+		Next ws
+		
+	End Sub
 
+	Public Sub LockSheets()
+		
+		With ThisWorkbook.Sheets("Edit").Rows(1)
+			If Selection.Locked = False Then
+				Selection.Locked = True
+			End If
+			If Selection.FormulaHidden = False Then
+				Selection.FormulaHidden = True
+			End If
+		End With
+		ThisWorkbook.Sheets("Edit").Protect
+		
+	End Sub
+	Public Sub OnStart()
+		
 		Application.AskToUpdateLinks = False
 		Application.ScreenUpdating = False
 		Application.Calculation = xlAutomatic
 		Application.EnableEvents = False
 		Application.DisplayAlerts = False
-
+		
+		Call UnlockSheets
+		
 	End Sub
 
 	Public Sub OnEnd()
-
+		
+		Call LockSheets
+		
 		Application.DisplayAlerts = True
 		Application.ScreenUpdating = True
 		Application.EnableEvents = True
 		Application.StatusBar = False
 		Application.AskToUpdateLinks = True
-
+		
 	End Sub
 
 	Public Sub Callback_AfterRedisplay()
@@ -240,48 +323,63 @@ Module1
 	End Sub
 
 	Public Sub DataValidationList()
+		Dim rng As Range
 		
-		Call OnStart
+		Call UnlockSheets
 		
-		ThisWorkbook.Sheets("Edit").Activate
-		ActiveSheet.Range("S3", Range("S3").End(xlDown)).Select
+		Set rng = Sheets("Edit").Range("S3", Range("S3").End(xlDown))
 		
-		With Selection.Validation
-			.Delete
-			.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
-				 Operator:=xlBetween, Formula1:="0,1,2"
-			.IgnoreBlank = True
-			.InCellDropdown = True
-			.ShowInput = True
-			.ShowError = True
+		With rng
+			With .Validation
+				.Delete
+				.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
+					 Operator:=xlBetween, Formula1:="0,1,2"
+				.IgnoreBlank = True
+				.InCellDropdown = True
+				.ShowInput = True
+				.ShowError = True
+			End With
 		End With
 		
-		If ActiveSheet.Range("S2").Comment Is Nothing Then
-			ActiveSheet.Range("S2").AddCommentThreaded ( _
-				"0 - Not approved;" & vbLf & "1 - Pending approval;" & vbLf & "2 - Approved;" _
-				)
-		End If
+		Set rng = Sheets("Edit").Range("S2")
 		
-		Call OnEnd
+		With rng
+			.ClearComments
+			If .Comment Is Nothing Then
+				.AddCommentThreaded ( _
+									"0 - Not approved;" & vbLf & "1 - Pending approval;" & vbLf & "2 - Approved;" _
+									)
+			End If
+		End With
 		
 	End Sub
 
 	Public Sub Remove_Hash_Characters()
 		
 		Dim rng         As Range
-		Dim cell           As Range
-		
-		Call OnStart
+		Dim Cell           As Range
 		
 		Set rng = ActiveSheet.Range("A6", Range("A6").End(xlDown).End(xlToRight))
 		
-		For Each cell In rng.Cells
-			If cell.Value = "#" Then
-				cell.Value = ""
+		For Each Cell In rng.Cells
+			If Cell.Value = "#" Then
+				Cell.Value = ""
 			End If
-		Next cell
+		Next Cell
 		
-		Call OnEnd
-
 	End Sub
 
+	Public Sub RestoreLineBreaks()
+		
+		Dim rng         As Range
+		Dim Cell           As Range
+		
+		Set rng = ActiveSheet.Range("Q6", Range("Q6").End(xlDown).End(xlToRight))
+		
+		For Each Cell In rng.Cells
+			If Len(Replace(Cell.Value, "&&", "")) <> Len(Cell.Value) Then
+				Cell.Value = Replace(Cell.Value, "&&", vbCrLf)
+			End If
+		Next Cell
+		
+	End Sub
