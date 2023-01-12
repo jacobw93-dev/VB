@@ -52,9 +52,9 @@ ThisWorkBook
 		Call OnStart
 		
 		Set InfoBox = CreateObject("WScript.Shell")
-		AckTime = 5
+		AckTime = 3
 		Select Case InfoBox.Popup("Refresh On tab """ & Sh.Name & """ in progress..." _
-			 & vbCrLf & vbCrLf & "(This window will close in 5 seconds)", _
+			 & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
 			   AckTime, "Data refresh", 0)
 		End Select
 		
@@ -117,13 +117,13 @@ ThisWorkBook
 			
 			EndTime = Timer
 			Select Case InfoBox.Popup("Data refreshed in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
-				 & vbCrLf & vbCrLf & "(This window will close in 5 seconds)", _
+				 & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
 				   AckTime, "Data refresh", 0)
-		End Select
+			End Select
 		
 		Else
 			Select Case InfoBox.Popup("You are not connected to the system" _
-				 & vbCrLf & vbCrLf & "(This window will close in 5 seconds)", _
+				 & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
 				   AckTime, "Connection status", 0)
 			End Select
 			lResult = Application.Run("SAPLogOff", "True")
@@ -153,7 +153,11 @@ Sheet3(Edit)
 			lResult = Application.Run("SAPGetProperty", "IsConnected", ds)
 			lRet = lRet And lResult
 			If lResult = False Then
-				ds_concat = ds & ", " & ds_concat
+				If ds_concat <> "" Then
+					ds_concat = ds_concat & ", " & ds
+				Else
+					ds_concat = ds
+				End If
 			End If
 		Next i
 		
@@ -210,9 +214,9 @@ Sheet3(Edit)
 			wb.Sheets("Edit").Range("E1").Value = Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]"
 			
 			Set InfoBox = CreateObject("WScript.Shell")
-			AckTime = 5
+			AckTime = 3
 			Select Case InfoBox.Popup("Data saved in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
-				 & vbCrLf & vbCrLf & "(This window will close in 5 seconds)", _
+				 & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
 				   AckTime, "Data saved", 0)
 		End Select
 		
@@ -275,6 +279,12 @@ Module1
 	End Sub
 
 	Public Sub LockSheets()
+		Dim rng As Range
+		
+		With ThisWorkbook.Sheets("Edit")
+			Set rng = Range("A1")
+			rng.Select
+		End With
 		
 		With ThisWorkbook.Sheets("Edit").Rows(1)
 			If Selection.Locked = False Then
@@ -324,21 +334,27 @@ Module1
 
 	Public Sub DataValidationList()
 		Dim rng As Range
+		Dim ws As Worksheet
 		
 		Call UnlockSheets
 		
-		Set rng = Sheets("Edit").Range("S3", Range("S3").End(xlDown))
+		Set ws = ThisWorkbook.Worksheets("Edit")
+		Set rng = ws.Range("S3", ws.Range("S3").End(xlDown))
 		
-		With rng
-			With .Validation
-				.Delete
-				.Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
-					 Operator:=xlBetween, Formula1:="0,1,2"
-				.IgnoreBlank = True
-				.InCellDropdown = True
-				.ShowInput = True
-				.ShowError = True
-			End With
+		ws.Activate
+		rng.Select
+
+		With rng.Validation
+			.Delete
+			.Add _
+				Type:=xlValidateList, _
+				AlertStyle:=xlValidAlertStop, _
+				Operator:=xlBetween, _
+				Formula1:="0,1,2"
+			.IgnoreBlank = True
+			.InCellDropdown = True
+			.ShowInput = True
+			.ShowError = True
 		End With
 		
 		Set rng = Sheets("Edit").Range("S2")
