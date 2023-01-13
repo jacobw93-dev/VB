@@ -369,8 +369,8 @@ Module1
 			.ClearComments
 			If .Comment Is Nothing Then
 				.AddCommentThreaded ( _
-									"0 - Not approved;" & vbLf & "1 - Pending approval;" & vbLf & "2 - Approved;" _
-									)
+					"0 - Not approved;" & vbLf & "1 - Pending approval;" & vbLf & "2 - Approved;" _
+					)
 			End If
 		End With
 		
