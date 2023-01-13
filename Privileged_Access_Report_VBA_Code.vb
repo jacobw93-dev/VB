@@ -53,6 +53,8 @@ ThisWorkBook
 		
 		Set InfoBox = CreateObject("WScript.Shell")
 		AckTime = 3
+		AppActivate Application.Caption
+		DoEvents
 		Select Case InfoBox.Popup("Refresh On tab """ & Sh.Name & """ in progress..." _
 			 & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
 			   AckTime, "Data refresh", 0)
@@ -116,12 +118,16 @@ ThisWorkBook
 			End If
 			
 			EndTime = Timer
+			AppActivate Application.Caption
+			DoEvents
 			Select Case InfoBox.Popup("Data refreshed in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
 				 & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
 				   AckTime, "Data refresh", 0)
 			End Select
 		
 		Else
+			AppActivate Application.Caption
+			DoEvents
 			Select Case InfoBox.Popup("You are not connected to the system" _
 				 & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
 				   AckTime, "Connection status", 0)
@@ -390,7 +396,7 @@ Module1
 		Dim rng         As Range
 		Dim Cell           As Range
 		
-		Set rng = ActiveSheet.Range("Q6", Range("Q6").End(xlDown).End(xlToRight))
+		Set rng = ActiveSheet.Range("Q6", Range("Q6").SpecialCells(xlLastCell))
 		
 		For Each Cell In rng.Cells
 			If Len(Replace(Cell.Value, "&&", "")) <> Len(Cell.Value) Then
