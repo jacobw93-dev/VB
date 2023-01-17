@@ -4,12 +4,24 @@ Public Sub Workbook_open()
 
     Dim wb          As Workbook
     Dim ws          As Worksheet
-    
     Dim lResult     As Long
     Dim addin       As COMAddIn
     Dim rng As Range
     
-    Call OnStart
+    Dim cofCom As Object
+    Dim epmCom As Object
+    On Error Resume Next
+    Stop
+    Set cofCom = Application.COMAddIns("SapExcelAddIn").Object
+    cofCom.ActivatePlugin ("com.sap.epm.FPMXLClient")
+    Set epmCom = cofCom.GetPlugin("com.sap.epm.FPMXLClient")
+
+    
+    Set wb = ThisWorkbook
+    
+    If wb.Windows(1).Visible = False Then
+        wb.Windows(1).Visible = True
+    End If
     
     For Each addin In Application.COMAddIns
         If addin.progID = "SapExcelAddIn" Then
@@ -21,6 +33,8 @@ Public Sub Workbook_open()
             End If
         End If
     Next
+    
+    Call OnStart
     
     lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
     lResult = Application.Run("SAPLogOff", "True")
@@ -47,6 +61,7 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
     Dim lSeparator_Count As Integer
     Dim item        As Variant, arr, c As Collection
     Dim rng         As Range
+    Dim llastrow As Long
     
     Dim AckTime     As Integer, InfoBox As Object
     
@@ -56,7 +71,8 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
     AckTime = 3
     AppActivate Application.Caption
     DoEvents
-    Select Case InfoBox.Popup("Refresh On tab """ & Sh.Name & """ in progress..." _
+    ThisWorkbook.Activate
+    Select Case InfoBox.Popup("Refresh on tab """ & Sh.Name & """ in progress..." _
          & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
            AckTime, "Data refresh", 0)
     End Select
@@ -90,17 +106,19 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
         
         StartTime = Timer
         
-        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
-        lResult = Application.Run("SAPExecuteCommand", "Refresh", lDS_Alias)
-        lResult = Application.Run("SAPExecuteCommand", "RefreshData", lDS_Alias)
+        lResult = Empty
+'        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
+'        lResult = Application.Run("SAPExecuteCommand", "Refresh", lDS_Alias)
+'        lResult = Application.Run("SAPExecuteCommand", "RefreshData", lDS_Alias)
         lResult = Application.Run("SAPExecuteCommand", "Restart", lDS_Alias)
+        lRefreshDate = Empty
         
         Select Case Sh.Name
             Case "Export"
                 lDS_Alias = "DS_2"
                 lRefreshDate = Application.Run("SAPGetSourceInfo", lDS_Alias, "QueryLastRefreshedAt")
-                Set rng = ThisWorkbook.Sheets("Export").Range("A1", Range("A1").End(xlDown).End(xlToRight).End(xlDown).End(xlToRight).End(xlDown))
-                '                Debug.Print (rng.Address)
+                llastrow = Range(ActiveSheet.Range("A65536").End(XlDirection.xlUp).Address).Row
+                Set rng = ThisWorkbook.Sheets("Export").Range("A1", Range("A" & llastrow).End(xlToRight))
                 ThisWorkbook.Sheets("Export").PageSetup.PrintArea = rng.Address
             Case Else
                 lRefreshDate = Application.Run("SAPGetSourceInfo", lDS_Alias, "QueryLastRefreshedAt")
@@ -112,9 +130,9 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
         
         If Sh.Name = "Edit" Then
             Call DataValidationList
-            Call LockSheets
+'            Call LockSheets
         ElseIf Sh.Name = "Export" Then
-            Call Remove_Hash_Characters
+            Call RemoveHashCharacters
             Call RestoreLineBreaks
         End If
         
@@ -122,6 +140,7 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
         lResult = Application.Run("SAPSetRefreshBehaviour", "On")
         AppActivate Application.Caption
         DoEvents
+        ThisWorkbook.Activate
         Select Case InfoBox.Popup("Data refreshed in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
              & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
                AckTime, "Data refresh", 0)
@@ -130,6 +149,7 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
     Else
         AppActivate Application.Caption
         DoEvents
+        ThisWorkbook.Activate
         Select Case InfoBox.Popup("You are not connected to the system" _
              & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
                AckTime, "Connection status", 0)
@@ -146,8 +166,35 @@ End Sub
 -------------
 Sheet3(Edit)
 
-Private Sub CommandButton1_Click()
-    
+Private Sub Worksheet_Change(ByVal Target As Range)
+
+    Dim ValidatedCells As Range
+    Dim Cell        As Range
+
+    Set ValidatedCells = Intersect(Target, Target.Parent.Range("Q:R,T:V"))
+    If Not ValidatedCells Is Nothing Then
+
+        For Each Cell In ValidatedCells
+            If Not Len(Cell.Value) <= 250 Then
+                MsgBox "The value" & _
+                       " inserted in cell " & Cell.Address & _
+                       " exceeds accepted field length by " & _
+                       Len(Cell.Value) - 250 & " characters." & _
+                       vbCrLf & vbCrLf & "Undo!", vb
+                Application.Undo
+                Exit Sub
+            End If
+        Next Cell
+
+        For Each Cell In ValidatedCells.Cells
+            If Len(Replace(Replace(Cell.Value, vbCr, ""), vbLf, "")) <> Len(Cell.Value) Then
+                Cell.Value = Replace(Replace(Cell.Value, vbCr, "&&"), vbLf, "&&")
+            End If
+        Next Cell
+    End If
+End Sub
+
+Private Sub Connect_Click()
     Dim lResult     As Long, lRet As Boolean
     Dim range_1     As Range
     Dim i           As Integer, ds As String, ds_concat As String
@@ -191,11 +238,9 @@ Private Sub CommandButton1_Click()
     End If
     
     Call OnEnd
-    
 End Sub
 
-Private Sub CommandButton2_Click()
-    
+Private Sub Save_Click()
     Dim lResult     As Long
     Dim lRefreshDate As Double
     Dim StartTime   As Double
@@ -216,7 +261,7 @@ Private Sub CommandButton2_Click()
         lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
         
         Call DataValidationList
-        Call Remove_Hash_Characters
+        Call RemoveHashCharacters
         
         EndTime = Timer
         lResult = Application.Run("SAPSetRefreshBehaviour", "On")
@@ -227,6 +272,8 @@ Private Sub CommandButton2_Click()
         Select Case InfoBox.Popup("Data saved in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
              & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
                AckTime, "Data saved", 0)
+                Case 1, -1
+                    Exit Sub
         End Select
         
     Else
@@ -234,51 +281,23 @@ Private Sub CommandButton2_Click()
     End If
     
     Call OnEnd
-
-End Sub
-
-Private Sub Worksheet_Change(ByVal Target As Range)
-    
-    Dim ValidatedCells As Range
-    Dim Cell        As Range
-    
-    Set ValidatedCells = Intersect(Target, Target.Parent.Range("Q:R,T:V"))
-    If Not ValidatedCells Is Nothing Then
-        
-        For Each Cell In ValidatedCells
-            If Not Len(Cell.Value) <= 250 Then
-                MsgBox "The value" & _
-                       " inserted in cell " & Cell.Address & _
-                       " exceeds accepted field length by " & _
-                       Len(Cell.Value) - 250 & " characters." & _
-                       vbCrLf & vbCrLf & "Undo!", vb
-                Application.Undo
-                Exit Sub
-            End If
-        Next Cell
-        
-        For Each Cell In ValidatedCells.Cells
-            If Len(Replace(Replace(Cell.Value, vbCr, ""), vbLf, "")) <> Len(Cell.Value) Then
-                Cell.Value = Replace(Replace(Cell.Value, vbCr, "&&"), vbLf, "&&")
-            End If
-        Next Cell
-    End If
 End Sub
 
 Private Sub Worksheet_SelectionChange(ByVal Target As Excel.Range)
     On Error GoTo 0
     With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
-        CommandButton1.Top = .Top + 0
-        CommandButton1.Left = .Left + 0
-        CommandButton2.Top = .Top + 0
-        CommandButton2.Left = .Left + 80
+        Connect.Top = .Top + 0
+        Connect.Left = .Left + 0
+        Save.Top = .Top + 0
+        Save.Left = .Left + 80
     End With
 End Sub
+
 
 -------------
 Module1
 
-Private Function SheetProtected(TargetSheet As Worksheet) As Boolean
+Public Function SheetProtected(TargetSheet As Worksheet) As Boolean
      'Function purpose:  To evaluate if a worksheet is protected
      
     If TargetSheet.ProtectContents = True Then
@@ -290,6 +309,7 @@ Private Function SheetProtected(TargetSheet As Worksheet) As Boolean
 End Function
 
 Public Sub UnlockSheets()
+
     Dim wb          As Workbook
     Dim ws          As Worksheet
     
@@ -313,30 +333,32 @@ Public Sub UnlockSheets()
     
 End Sub
 
-Public Sub LockSheets()
-    Dim rng As Range
-    Dim lResult     As Long
-    
-    ThisWorkbook.Activate
-    
-    With ThisWorkbook.Sheets("Edit")
-        Set rng = Range("A1")
-        rng.Select
-    End With
-    
-    With ThisWorkbook.Sheets("Edit").Rows(1)
-        If Selection.Locked = False Then
-            Selection.Locked = True
-        End If
-        If Selection.FormulaHidden = False Then
-            Selection.FormulaHidden = True
-        End If
-    End With
-    If ActiveSheet.ProtectContents = False Then
-        ThisWorkbook.Sheets("Edit").Protect DrawingObjects:=True, Contents:=True, Scenarios:=True
-    End If
-    
-End Sub
+'Public Sub LockSheets()
+'
+'    Dim rng As Range
+'    Dim lResult     As Long
+'
+'    ThisWorkbook.Activate
+'
+'    With ThisWorkbook.Sheets("Edit")
+'        Set rng = Range("A1")
+'        rng.Select
+'    End With
+'
+'    With ThisWorkbook.Sheets("Edit").Rows(1)
+'        If Selection.Locked = False Then
+'            Selection.Locked = True
+'        End If
+'        If Selection.FormulaHidden = False Then
+'            Selection.FormulaHidden = True
+'        End If
+'    End With
+'    If ActiveSheet.ProtectContents = False Then
+'        ThisWorkbook.Sheets("Edit").Protect DrawingObjects:=True, Contents:=True, Scenarios:=True
+'    End If
+'
+'End Sub
+
 Public Sub OnStart()
     
     Dim wb          As Workbook
@@ -352,7 +374,6 @@ Public Sub OnStart()
     Application.DisplayAlerts = False
     Application.EnableEvents = False
     Application.ScreenUpdating = False
-    Application.StatusBar = False
     
     Call UnlockSheets
     
@@ -367,7 +388,7 @@ Public Sub OnEnd()
     
     ThisWorkbook.Activate
        
-    Call LockSheets
+'    Call LockSheets
     
     ActiveSheet.EnableCalculation = True
     Application.AskToUpdateLinks = True
@@ -375,18 +396,19 @@ Public Sub OnEnd()
     Application.DisplayAlerts = True
     Application.EnableEvents = True
     Application.ScreenUpdating = True
-    Application.StatusBar = True
     
 End Sub
 
 Public Sub DataValidationList()
+
     Dim rng As Range
     Dim ws As Worksheet
 
     Set ws = ThisWorkbook.Worksheets("Edit")
-    Set rng = ws.Range("S3", ws.Range("S3").End(xlDown))
-    
     ws.Activate
+    llastrow = Range(ActiveSheet.Range("A65536").End(XlDirection.xlUp).Address).Row
+    Set rng = ActiveSheet.Range("S3", Range("S" & llastrow))
+    
     rng.Select
     
     If SheetProtected(ws) Then
@@ -419,18 +441,30 @@ Public Sub DataValidationList()
     
 End Sub
 
-Public Sub Remove_Hash_Characters()
+Public Sub RemoveHashCharacters()
     
     Dim rng         As Range
     Dim Cell           As Range
+    Dim llastrow As Long
     
-    Set rng = ActiveSheet.Range("A6", Range("A6").End(xlDown).End(xlToRight))
+    llastrow = Range(Range("A65536").End(XlDirection.xlUp).Address).Row
+    Set rng = ActiveSheet.Range("A6", Range("A" & llastrow).End(xlToRight))
     
-    For Each Cell In rng.Cells
-        If Cell.Value = "#" Then
-            Cell.Value = ""
-        End If
-    Next Cell
+    With rng.Cells
+        .Replace _
+            What:="#", _
+            Replacement:="", _
+            LookAt:=xlWhole, _
+            SearchOrder:=xlByRows, _
+            MatchCase:=False, _
+            SearchFormat:=False, _
+            ReplaceFormat:=False
+    End With
+'    For Each Cell In rng.Cells
+'        If Cell.Value = "#" Then
+'            Cell.Value = ""
+'        End If
+'    Next Cell
     
 End Sub
 
@@ -438,13 +472,25 @@ Public Sub RestoreLineBreaks()
     
     Dim rng         As Range
     Dim Cell           As Range
+    Dim llastrow As Long
     
-    Set rng = ActiveSheet.Range("Q6", Range("Q6").SpecialCells(xlLastCell))
+    llastrow = Range(Range("A65536").End(XlDirection.xlUp).Address).Row
+    Set rng = ActiveSheet.Range("Q6", Range("Q" & llastrow).End(xlToRight))
     
-    For Each Cell In rng.Cells
-        If Len(Replace(Cell.Value, "&&", "")) <> Len(Cell.Value) Then
-            Cell.Value = Replace(Cell.Value, "&&", vbCrLf)
-        End If
-    Next Cell
+    With rng.Cells
+        .Replace _
+            What:="&&", _
+            Replacement:=vbCrLf, _
+            LookAt:=xlWhole, _
+            SearchOrder:=xlByRows, _
+            MatchCase:=False, _
+            SearchFormat:=False, _
+            ReplaceFormat:=False
+    End With
+'    For Each Cell In rng.Cells
+'        If Len(Replace(Cell.Value, "&&", "")) <> Len(Cell.Value) Then
+'            Cell.Value = Replace(Cell.Value, "&&", vbCrLf)
+'        End If
+'    Next Cell
     
 End Sub
