@@ -473,7 +473,7 @@ Public Sub RestoreLineBreaks()
         .Replace _
             What:="&&", _
             Replacement:=vbCrLf, _
-            LookAt:=xlWhole, _
+            LookAt:=xlPart, _
             SearchOrder:=xlByRows, _
             MatchCase:=False, _
             SearchFormat:=False, _
