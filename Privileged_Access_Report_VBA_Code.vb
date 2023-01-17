@@ -171,39 +171,42 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Dim ValidatedCells As Range
     Dim Cell        As Range
     Dim Result As Integer
-
+    Dim StringLenLim As Integer
+    Dim LineSeparator As String
+    Dim NewCellValue As String
+    
+    LineSeparator = "&&"
+    StringLenLim = 250
+    
     Set ValidatedCells = Intersect(Target, Target.Parent.Range("Q:R,T:V"))
     If Not ValidatedCells Is Nothing Then
-
         For Each Cell In ValidatedCells
-            
-            If Not Len(Cell.Value) <= 250 Then
-                Result = MsgBox("The value" & _
-                       " inserted in cell " & Cell.Address & _
-                       " exceeds accepted field length by " & _
-                       Len(Cell.Value) - 250 & " characters." & _
-                       vbCrLf & vbCrLf & "Split it into 2 columns (Ok) or undo (Cancel)?", vbQuestion + vbOKCancel)
-                If Result = vbOK Then
-                    If (Cell.Column = 17 Or Cell.Column = 20) Then
-                        Cell.Offset(, 1).Value = Right(Cell.Value, Len(Cell.Value) - 250)
-                        Cell.Value = Left(Cell.Value, 250)
+                If Not Len(Cell.Value) <= StringLenLim Then
+                    If Len(Replace(Replace(Cell.Value, vbCr, ""), vbLf, "")) <> Len(Cell.Value) Then
+                        NewCellValue = Replace(Replace(Cell.Value, vbCr, LineSeparator), vbLf, LineSeparator)
+                    End If
+                    Result = MsgBox("The value" & _
+                           " inserted in cell " & Cell.Address & _
+                           " exceeds accepted field length by " & _
+                           Len(Cell.Value) - StringLenLim & " characters." & _
+                           vbCrLf & vbCrLf & "Split it into 2 columns (Ok) or undo (Cancel)?", _
+                           vbQuestion + vbOKCancel)
+                    If Result = vbOK Then
+                        If (Cell.Column = 17 Or Cell.Column = 20) Then
+                            Cell.Offset(, 1).Value = Right(NewCellValue, Len(NewCellValue) - StringLenLim)
+                            NewCellValue = Left(NewCellValue, StringLenLim)
+                            Cell.Value = NewCellValue
+                        Else
+                            MsgBox "Cannot split value in that column"
+                            Application.Undo
+                            Exit Sub
+                        End If
                     Else
-                        MsgBox "Cannot split value in that column", vbOKOnly
                         Application.Undo
                         Exit Sub
                     End If
-                Else
-                    Application.Undo
                     Exit Sub
                 End If
-                Exit Sub
-            End If
-        Next Cell
-        
-        For Each Cell In ValidatedCells.Cells
-            If Len(Replace(Replace(Cell.Value, vbCr, ""), vbLf, "")) <> Len(Cell.Value) Then
-                Cell.Value = Replace(Replace(Cell.Value, vbCr, "&&"), vbLf, "&&")
-            End If
         Next Cell
     End If
 End Sub
@@ -211,27 +214,28 @@ End Sub
 Private Sub Connect_Click()
     Dim lResult     As Long, lRet As Boolean
     Dim range_1     As Range
-    Dim i           As Integer, ds As String, ds_concat As String
+    Dim i           As Integer, ds As String, ds_name As String, ds_concat As String
     
     Call OnStart
     
     lRet = True
-    
+    Stop
     For i = 1 To 5
         ds = "DS_" & i
         lResult = Application.Run("SAPGetProperty", "IsConnected", ds)
+        ds_name = Application.Run("SAPGetSourceInfo", ds, "DataSourceName")
         lRet = lRet And lResult
-        If lResult = False Then
+        If lRet = False Then
             If ds_concat <> "" Then
-                ds_concat = ds_concat & ", " & ds
+                ds_concat = "'" & ds_concat & "'" & ", " & vbCrLf & ds_name
             Else
-                ds_concat = ds
+                ds_concat = "'" & ds_name & "'"
             End If
         End If
     Next i
     
     If ds_concat <> "" Then
-        MsgBox "Data Sources: """ & ds_concat & """ are inactive"
+        MsgBox "Data Sources: " & ds_concat & vbCrLf & vbCrLf & " are inactive"
     End If
     
     If lResult = False Then
