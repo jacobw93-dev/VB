@@ -170,22 +170,36 @@ Private Sub Worksheet_Change(ByVal Target As Range)
 
     Dim ValidatedCells As Range
     Dim Cell        As Range
+    Dim Result As Integer
 
     Set ValidatedCells = Intersect(Target, Target.Parent.Range("Q:R,T:V"))
     If Not ValidatedCells Is Nothing Then
 
         For Each Cell In ValidatedCells
+            
             If Not Len(Cell.Value) <= 250 Then
-                MsgBox "The value" & _
+                Result = MsgBox("The value" & _
                        " inserted in cell " & Cell.Address & _
                        " exceeds accepted field length by " & _
                        Len(Cell.Value) - 250 & " characters." & _
-                       vbCrLf & vbCrLf & "Undo!", vb
-                Application.Undo
+                       vbCrLf & vbCrLf & "Split it into 2 columns (Ok) or undo (Cancel)?", vbQuestion + vbOKCancel)
+                If Result = vbOK Then
+                    If (Cell.Column = 17 Or Cell.Column = 20) Then
+                        Cell.Offset(, 1).Value = Right(Cell.Value, Len(Cell.Value) - 250)
+                        Cell.Value = Left(Cell.Value, 250)
+                    Else
+                        MsgBox "Cannot split value in that column", vbOKOnly
+                        Application.Undo
+                        Exit Sub
+                    End If
+                Else
+                    Application.Undo
+                    Exit Sub
+                End If
                 Exit Sub
             End If
         Next Cell
-
+        
         For Each Cell In ValidatedCells.Cells
             If Len(Replace(Replace(Cell.Value, vbCr, ""), vbLf, "")) <> Len(Cell.Value) Then
                 Cell.Value = Replace(Replace(Cell.Value, vbCr, "&&"), vbLf, "&&")
@@ -257,6 +271,7 @@ Private Sub Save_Click()
         
         StartTime = Timer
         lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
+        lResult = Application.Run("SAPDeleteDesignRule", "DS_2")
         lResult = Application.Run("SAPExecuteCommand", "PlanDataSave")
         lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
         
@@ -292,7 +307,6 @@ Private Sub Worksheet_SelectionChange(ByVal Target As Excel.Range)
         Save.Left = .Left + 80
     End With
 End Sub
-
 
 -------------
 Module1
@@ -332,32 +346,6 @@ Public Sub UnlockSheets()
 
     
 End Sub
-
-'Public Sub LockSheets()
-'
-'    Dim rng As Range
-'    Dim lResult     As Long
-'
-'    ThisWorkbook.Activate
-'
-'    With ThisWorkbook.Sheets("Edit")
-'        Set rng = Range("A1")
-'        rng.Select
-'    End With
-'
-'    With ThisWorkbook.Sheets("Edit").Rows(1)
-'        If Selection.Locked = False Then
-'            Selection.Locked = True
-'        End If
-'        If Selection.FormulaHidden = False Then
-'            Selection.FormulaHidden = True
-'        End If
-'    End With
-'    If ActiveSheet.ProtectContents = False Then
-'        ThisWorkbook.Sheets("Edit").Protect DrawingObjects:=True, Contents:=True, Scenarios:=True
-'    End If
-'
-'End Sub
 
 Public Sub OnStart()
     
