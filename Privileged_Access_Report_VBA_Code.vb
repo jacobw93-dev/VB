@@ -343,32 +343,6 @@ Public Sub UnlockSheets()
     
 End Sub
 
-'Public Sub LockSheets()
-'
-'    Dim rng As Range
-'    Dim lResult     As Long
-'
-'    ThisWorkbook.Activate
-'
-'    With ThisWorkbook.Sheets("Edit")
-'        Set rng = Range("A1")
-'        rng.Select
-'    End With
-'
-'    With ThisWorkbook.Sheets("Edit").Rows(1)
-'        If Selection.Locked = False Then
-'            Selection.Locked = True
-'        End If
-'        If Selection.FormulaHidden = False Then
-'            Selection.FormulaHidden = True
-'        End If
-'    End With
-'    If ActiveSheet.ProtectContents = False Then
-'        ThisWorkbook.Sheets("Edit").Protect DrawingObjects:=True, Contents:=True, Scenarios:=True
-'    End If
-'
-'End Sub
-
 Public Sub OnStart()
     
     Dim wb          As Workbook
@@ -471,7 +445,7 @@ Public Sub RemoveHashCharacters()
             SearchFormat:=False, _
             ReplaceFormat:=False
             
-    rng.Columns.AutoFit
+    rng.Columns.EntireColumn.AutoFit
     rng.Rows.EntireRow.AutoFit
 
 '    For Each Cell In rng.Cells
