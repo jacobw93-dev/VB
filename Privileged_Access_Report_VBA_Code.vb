@@ -11,11 +11,9 @@ Public Sub Workbook_open()
     Dim cofCom As Object
     Dim epmCom As Object
     On Error Resume Next
-    Stop
     Set cofCom = Application.COMAddIns("SapExcelAddIn").Object
     cofCom.ActivatePlugin ("com.sap.epm.FPMXLClient")
     Set epmCom = cofCom.GetPlugin("com.sap.epm.FPMXLClient")
-
     
     Set wb = ThisWorkbook
     
@@ -92,15 +90,16 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
     lSeparator_Count = Len(lDS_Alias) - Len(Replace(lDS_Alias, lSeparator, ""))
     lRet = True
     
-    If lSeparator_Count > 0 Then
-        arr = Split(lDS_Alias, lSeparator)
-        For Each item In arr
-            lRet = Application.Run("SAPGetProperty", "IsConnected", item) And lRet
-        Next item
-    Else
-        lRet = Application.Run("SAPGetProperty", "IsConnected", lDS_Alias)
+    If lDS_Alias <> "" Then
+        If lSeparator_Count > 0 Then
+            arr = Split(lDS_Alias, lSeparator)
+            For Each item In arr
+                lRet = Application.Run("SAPGetProperty", "IsConnected", item) And lRet
+            Next item
+        Else
+            lRet = Application.Run("SAPGetProperty", "IsConnected", lDS_Alias)
+        End If
     End If
-    
 
     If lRet = True Then
         
@@ -117,23 +116,18 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
             Case "Export"
                 lDS_Alias = "DS_2"
                 lRefreshDate = Application.Run("SAPGetSourceInfo", lDS_Alias, "QueryLastRefreshedAt")
-                llastrow = Range(ActiveSheet.Range("A65536").End(XlDirection.xlUp).Address).Row
-                Set rng = ThisWorkbook.Sheets("Export").Range("A1", Range("A" & llastrow).End(xlToRight))
-                ThisWorkbook.Sheets("Export").PageSetup.PrintArea = rng.Address
+                Call SetPrintLayout(lRefreshDate)
             Case Else
                 lRefreshDate = Application.Run("SAPGetSourceInfo", lDS_Alias, "QueryLastRefreshedAt")
         End Select
         
-        For Each ws In Application.ActiveWorkbook.Worksheets
-            ws.PageSetup.CenterHeader = "QueryLastRefreshedAt: " & Format(lRefreshDate, "dddd, mmmm d, yyyy h:mm:ss")
-        Next
         
         If Sh.Name = "Edit" Then
             Call DataValidationList
 '            Call LockSheets
         ElseIf Sh.Name = "Export" Then
-            Call RemoveHashCharacters
             Call RestoreLineBreaks
+            Call RemoveHashCharacters
         End If
         
         EndTime = Timer
@@ -219,23 +213,22 @@ Private Sub Connect_Click()
     Call OnStart
     
     lRet = True
-    Stop
     For i = 1 To 5
         ds = "DS_" & i
         lResult = Application.Run("SAPGetProperty", "IsConnected", ds)
-        ds_name = Application.Run("SAPGetSourceInfo", ds, "DataSourceName")
+'        ds_name = Application.Run("SAPGetSourceInfo", ds, "DataSourceName")
         lRet = lRet And lResult
         If lRet = False Then
             If ds_concat <> "" Then
-                ds_concat = "'" & ds_concat & "'" & ", " & vbCrLf & ds_name
+                ds_concat = ds_concat & ", " & vbCrLf & "'" & ds & "'"
             Else
-                ds_concat = "'" & ds_name & "'"
+                ds_concat = "'" & ds & "'"
             End If
         End If
     Next i
     
     If ds_concat <> "" Then
-        MsgBox "Data Sources: " & ds_concat & vbCrLf & vbCrLf & " are inactive"
+        MsgBox "Data Sources: " & vbCrLf & vbCrLf & ds_concat & vbCrLf & vbCrLf & " are inactive"
     End If
     
     If lResult = False Then
@@ -280,7 +273,6 @@ Private Sub Save_Click()
         lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
         
         Call DataValidationList
-        Call RemoveHashCharacters
         
         EndTime = Timer
         lResult = Application.Run("SAPSetRefreshBehaviour", "On")
@@ -350,6 +342,32 @@ Public Sub UnlockSheets()
 
     
 End Sub
+
+'Public Sub LockSheets()
+'
+'    Dim rng As Range
+'    Dim lResult     As Long
+'
+'    ThisWorkbook.Activate
+'
+'    With ThisWorkbook.Sheets("Edit")
+'        Set rng = Range("A1")
+'        rng.Select
+'    End With
+'
+'    With ThisWorkbook.Sheets("Edit").Rows(1)
+'        If Selection.Locked = False Then
+'            Selection.Locked = True
+'        End If
+'        If Selection.FormulaHidden = False Then
+'            Selection.FormulaHidden = True
+'        End If
+'    End With
+'    If ActiveSheet.ProtectContents = False Then
+'        ThisWorkbook.Sheets("Edit").Protect DrawingObjects:=True, Contents:=True, Scenarios:=True
+'    End If
+'
+'End Sub
 
 Public Sub OnStart()
     
@@ -442,8 +460,9 @@ Public Sub RemoveHashCharacters()
     llastrow = Range(Range("A65536").End(XlDirection.xlUp).Address).Row
     Set rng = ActiveSheet.Range("A6", Range("A" & llastrow).End(xlToRight))
     
-    With rng.Cells
-        .Replace _
+    rng.Select
+        
+    Selection.Replace _
             What:="#", _
             Replacement:="", _
             LookAt:=xlWhole, _
@@ -451,7 +470,10 @@ Public Sub RemoveHashCharacters()
             MatchCase:=False, _
             SearchFormat:=False, _
             ReplaceFormat:=False
-    End With
+            
+    rng.Columns.AutoFit
+    rng.Rows.EntireRow.AutoFit
+
 '    For Each Cell In rng.Cells
 '        If Cell.Value = "#" Then
 '            Cell.Value = ""
@@ -469,8 +491,16 @@ Public Sub RestoreLineBreaks()
     llastrow = Range(Range("A65536").End(XlDirection.xlUp).Address).Row
     Set rng = ActiveSheet.Range("Q6", Range("Q" & llastrow).End(xlToRight))
     
-    With rng.Cells
-        .Replace _
+    For Each Cell In rng.Cells
+        If (Cell.Column = 17 Or Cell.Column = 19) Then
+            Cell.Value = Cell.Value & Cell.Offset(, 1).Value
+            Cell.Offset(, 1).ClearContents
+        End If
+    Next Cell
+    
+    rng.Select
+        
+    Selection.Replace _
             What:="&&", _
             Replacement:=vbCrLf, _
             LookAt:=xlPart, _
@@ -478,11 +508,25 @@ Public Sub RestoreLineBreaks()
             MatchCase:=False, _
             SearchFormat:=False, _
             ReplaceFormat:=False
-    End With
 '    For Each Cell In rng.Cells
 '        If Len(Replace(Cell.Value, "&&", "")) <> Len(Cell.Value) Then
 '            Cell.Value = Replace(Cell.Value, "&&", vbCrLf)
 '        End If
 '    Next Cell
+
+End Sub
+
+Public Sub SetPrintLayout(lRefreshDate As Double)
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets("Export")
     
+    ws.Activate
+    ws.Range("R:R,T:T").Select
+    Selection.EntireColumn.Hidden = True
+    
+    llastrow = Range(ws.Range("A65536").End(XlDirection.xlUp).Address).Row
+    Set rng = ws.Range("A1", Range("A" & llastrow).End(xlToRight))
+    ws.PageSetup.PrintArea = rng.Address
+    ws.PageSetup.CenterHeader = "QueryLastRefreshedAt: " & Format(lRefreshDate, "dddd, mmmm d, yyyy h:mm:ss")
+
 End Sub
