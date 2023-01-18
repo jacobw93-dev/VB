@@ -9,11 +9,11 @@ Public Sub Workbook_open()
     Dim rng As Range
     
     Dim cofCom As Object
-    Dim epmCom As Object
+'    Dim epmCom As Object
     On Error Resume Next
     Set cofCom = Application.COMAddIns("SapExcelAddIn").Object
-    cofCom.ActivatePlugin ("com.sap.epm.FPMXLClient")
-    Set epmCom = cofCom.GetPlugin("com.sap.epm.FPMXLClient")
+'    cofCom.ActivatePlugin ("com.sap.epm.FPMXLClient")
+'    Set epmCom = cofCom.GetPlugin("com.sap.epm.FPMXLClient")
     
     Set wb = ThisWorkbook
     
@@ -258,17 +258,18 @@ Private Sub Save_Click()
     Dim EndTime     As Double
     Dim wb          As Workbook
     Dim AckTime     As Integer, InfoBox As Object
+    Dim ds_alias As String: ds_alias = "DS_3"
     
     Set wb = ThisWorkbook
     
     Call OnStart
     
-    lResult = Application.Run("SAPGetProperty", "IsConnected", "DS_2")
+    lResult = Application.Run("SAPGetProperty", "IsConnected", ds_alias)
     If lResult = True Then
         
         StartTime = Timer
         lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
-        lResult = Application.Run("SAPDeleteDesignRule", "DS_2")
+        lResult = Application.Run("SAPDeleteDesignRule", ds_alias)
         lResult = Application.Run("SAPExecuteCommand", "PlanDataSave")
         lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
         
@@ -444,7 +445,7 @@ Public Sub RemoveHashCharacters()
             MatchCase:=False, _
             SearchFormat:=False, _
             ReplaceFormat:=False
-            
+                    
     rng.Columns.EntireColumn.AutoFit
     rng.Rows.EntireRow.AutoFit
 
