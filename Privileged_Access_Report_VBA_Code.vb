@@ -166,17 +166,24 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Dim StringLenLim As Integer
     Dim LineSeparator As String
     Dim NewCellValue As String
+    Dim rng         As Range
+    Dim llastrow    As Long
+    
+
+    llastrow = Range(ActiveSheet.Range("A65536").End(XlDirection.xlUp).Address).Row
     
     LineSeparator = "&&"
     StringLenLim = 250
     
-    Set ValidatedCells = Intersect(Target, Target.Parent.Range("Q:R,T:V"))
+'    Set ValidatedCells = Intersect(Target, Target.Parent.Range("Q:R,T:V"))
+    Set ValidatedCells = Intersect(Target, Target.Parent.Range("Q3:R" & llastrow, "T3:V" & llastrow))
     If Not ValidatedCells Is Nothing Then
         For Each Cell In ValidatedCells
+            Debug.Print (Cell.Value)
+                If Len(Replace(Replace(Cell.Value, vbCr, ""), vbLf, "")) <> Len(Cell.Value) Then
+                        Cell.Value = Replace(Replace(Cell.Value, vbCr, LineSeparator), vbLf, LineSeparator)
+                End If
                 If Not Len(Cell.Value) <= StringLenLim Then
-                    If Len(Replace(Replace(Cell.Value, vbCr, ""), vbLf, "")) <> Len(Cell.Value) Then
-                        NewCellValue = Replace(Replace(Cell.Value, vbCr, LineSeparator), vbLf, LineSeparator)
-                    End If
                     Result = MsgBox("The value" & _
                            " inserted in cell " & Cell.Address & _
                            " exceeds accepted field length by " & _
