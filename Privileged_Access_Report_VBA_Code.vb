@@ -60,16 +60,17 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
     Dim item        As Variant, arr, c As Collection
     Dim rng         As Range
     Dim llastrow As Long
+    Dim ws As Worksheet
     
     Dim AckTime     As Integer, InfoBox As Object
     
     Call OnStart
     
+    StartTime = Timer
     Set InfoBox = CreateObject("WScript.Shell")
     AckTime = 3
     AppActivate Application.Caption
     DoEvents
-    ThisWorkbook.Activate
     Select Case InfoBox.Popup("Refresh on tab """ & Sh.Name & """ in progress..." _
          & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
            AckTime, "Data refresh", 0)
@@ -103,14 +104,11 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
 
     If lRet = True Then
         
-        StartTime = Timer
-        
         lResult = Empty
 '        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
 '        lResult = Application.Run("SAPExecuteCommand", "Refresh", lDS_Alias)
 '        lResult = Application.Run("SAPExecuteCommand", "RefreshData", lDS_Alias)
         lResult = Application.Run("SAPExecuteCommand", "Restart", lDS_Alias)
-        lRefreshDate = Empty
         
         Select Case Sh.Name
             Case "Export"
@@ -128,13 +126,15 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
         ElseIf Sh.Name = "Export" Then
             Call RestoreLineBreaks
             Call RemoveHashCharacters
+            Set ws = ThisWorkbook.Sheets("Export")
+            ws.Range("R:R,T:T").Select
+            Selection.EntireColumn.Hidden = True
         End If
         
-        EndTime = Timer
         lResult = Application.Run("SAPSetRefreshBehaviour", "On")
         AppActivate Application.Caption
         DoEvents
-        ThisWorkbook.Activate
+        EndTime = Timer
         Select Case InfoBox.Popup("Data refreshed in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
              & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
                AckTime, "Data refresh", 0)
@@ -143,7 +143,6 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
     Else
         AppActivate Application.Caption
         DoEvents
-        ThisWorkbook.Activate
         Select Case InfoBox.Popup("You are not connected to the system" _
              & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
                AckTime, "Connection status", 0)
@@ -153,7 +152,6 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
     End If
     
     Call OnEnd
-    ActiveSheet.Calculate
 
 End Sub
 
@@ -183,7 +181,8 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                            " inserted in cell " & Cell.Address & _
                            " exceeds accepted field length by " & _
                            Len(Cell.Value) - StringLenLim & " characters." & _
-                           vbCrLf & vbCrLf & "Split it into 2 columns (Ok) or undo (Cancel)?", _
+                           vbCrLf & vbCrLf & _
+                           "Split it into 2 columns (Ok) or undo (Cancel)?", _
                            vbQuestion + vbOKCancel)
                     If Result = vbOK Then
                         If (Cell.Column = 17 Or Cell.Column = 20) Then
@@ -208,7 +207,7 @@ End Sub
 Private Sub Connect_Click()
     Dim lResult     As Long, lRet As Boolean
     Dim range_1     As Range
-    Dim i           As Integer, ds As String, ds_name As String, ds_concat As String
+    Dim i As Integer, ds As String, ds_name As String, ds_concat As String
     
     Call OnStart
     
@@ -228,7 +227,7 @@ Private Sub Connect_Click()
     Next i
     
     If ds_concat <> "" Then
-        MsgBox "Data Sources: " & vbCrLf & vbCrLf & ds_concat & vbCrLf & vbCrLf & " are inactive"
+        MsgBox "Data Sources: " & vbCrLf & ds_concat & vbCrLf & " are inactive"
     End If
     
     If lResult = False Then
@@ -431,29 +430,53 @@ Public Sub RemoveHashCharacters()
     Dim rng         As Range
     Dim Cell           As Range
     Dim llastrow As Long
+    Dim DataRange As Variant
+    Dim Irow As Long, rowcnt As Integer
+    Dim Icol As Integer, colcnt As Integer
+    Dim MyVar As String
     
     llastrow = Range(Range("A65536").End(XlDirection.xlUp).Address).Row
     Set rng = ActiveSheet.Range("A6", Range("A" & llastrow).End(xlToRight))
     
-    rng.Select
-        
-    Selection.Replace _
-            What:="#", _
-            Replacement:="", _
-            LookAt:=xlWhole, _
-            SearchOrder:=xlByRows, _
-            MatchCase:=False, _
-            SearchFormat:=False, _
-            ReplaceFormat:=False
-                    
-    rng.Columns.EntireColumn.AutoFit
-    rng.Rows.EntireRow.AutoFit
+    DataRange = rng.Value
+    rowcnt = rng.Rows.Count
+    colcnt = rng.Columns.Count
+'    Debug.Print ("Range " & rng.Address & " has " & Irow & " rows and " & Icol & " columns.")
 
+    For Irow = 1 To rowcnt
+      For Icol = 1 To colcnt
+      MyVar = DataRange(Irow, Icol)
+      If MyVar <> "" Then
+        If MyVar = "#" Then
+            MyVar = ""
+        End If
+        DataRange(Irow, Icol) = MyVar
+      End If
+    Next Icol
+    Next Irow
+    rng.Value = DataRange
+    
+'    Replace method #1
+'    rng.Select
+'
+'    Selection.Replace _
+'            What:="#", _
+'            Replacement:="", _
+'            LookAt:=xlWhole, _
+'            SearchOrder:=xlByRows, _
+'            MatchCase:=False, _
+'            SearchFormat:=False, _
+'            ReplaceFormat:=False
+
+'    Replace method #2
 '    For Each Cell In rng.Cells
 '        If Cell.Value = "#" Then
 '            Cell.Value = ""
 '        End If
 '    Next Cell
+                    
+    rng.Columns.EntireColumn.AutoFit
+    rng.Rows.EntireRow.AutoFit
     
 End Sub
 
@@ -462,10 +485,19 @@ Public Sub RestoreLineBreaks()
     Dim rng         As Range
     Dim Cell           As Range
     Dim llastrow As Long
+    Dim DataRange As Variant
+    Dim Irow As Long, rowcnt As Integer
+    Dim Icol As Integer, colcnt As Integer
+    Dim MyVar As String
+
     
     llastrow = Range(Range("A65536").End(XlDirection.xlUp).Address).Row
     Set rng = ActiveSheet.Range("Q6", Range("Q" & llastrow).End(xlToRight))
-    
+    DataRange = rng.Value
+    rowcnt = rng.Rows.Count
+    colcnt = rng.Columns.Count
+'    Debug.Print ("Range " & rng.Address & " has " & Irow & " rows and " & Icol & " columns.")
+
     For Each Cell In rng.Cells
         If (Cell.Column = 17 Or Cell.Column = 19) Then
             Cell.Value = Cell.Value & Cell.Offset(, 1).Value
@@ -473,16 +505,32 @@ Public Sub RestoreLineBreaks()
         End If
     Next Cell
     
-    rng.Select
-        
-    Selection.Replace _
-            What:="&&", _
-            Replacement:=vbCrLf, _
-            LookAt:=xlPart, _
-            SearchOrder:=xlByRows, _
-            MatchCase:=False, _
-            SearchFormat:=False, _
-            ReplaceFormat:=False
+    For Irow = 1 To rowcnt
+      For Icol = 1 To colcnt
+      MyVar = DataRange(Irow, Icol)
+      If MyVar <> "" Then
+        If Len(Replace(MyVar, "&&", "")) <> Len(MyVar) Then
+            MyVar = Replace(MyVar, "&&", vbCrLf)
+        End If
+        DataRange(Irow, Icol) = MyVar
+      End If
+    Next Icol
+    Next Irow
+    rng.Value = DataRange
+    
+'    Replace method #1
+'    rng.Select
+'
+'    Selection.Replace _
+'            What:="&&", _
+'            Replacement:=vbCrLf, _
+'            LookAt:=xlPart, _
+'            SearchOrder:=xlByRows, _
+'            MatchCase:=False, _
+'            SearchFormat:=False, _
+'            ReplaceFormat:=False
+
+'    Replace method #2
 '    For Each Cell In rng.Cells
 '        If Len(Replace(Cell.Value, "&&", "")) <> Len(Cell.Value) Then
 '            Cell.Value = Replace(Cell.Value, "&&", vbCrLf)
@@ -492,12 +540,11 @@ Public Sub RestoreLineBreaks()
 End Sub
 
 Public Sub SetPrintLayout(lRefreshDate As Double)
+
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("Export")
     
     ws.Activate
-    ws.Range("R:R,T:T").Select
-    Selection.EntireColumn.Hidden = True
     
     llastrow = Range(ws.Range("A65536").End(XlDirection.xlUp).Address).Row
     Set rng = ws.Range("A1", Range("A" & llastrow).End(xlToRight))
