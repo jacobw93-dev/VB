@@ -193,7 +193,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                            vbQuestion + vbOKCancel)
                     If Result = vbOK Then
                         If (Cell.Column = 17 Or Cell.Column = 20) Then
-                            Cell.Offset(, 1).Value = Right(NewCellValue, Len(NewCellValue) - StringLenLim)
+                            Cell.Offset(, 1).Value = Right(Cell.Value, Len(Cell.Value) - StringLenLim)
                             NewCellValue = Left(NewCellValue, StringLenLim)
                             Cell.Value = NewCellValue
                         Else
