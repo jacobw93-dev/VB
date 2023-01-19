@@ -194,7 +194,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                     If Result = vbOK Then
                         If (Cell.Column = 17 Or Cell.Column = 20) Then
                             Cell.Offset(, 1).Value = Right(Cell.Value, Len(Cell.Value) - StringLenLim)
-                            NewCellValue = Left(NewCellValue, StringLenLim)
+                            NewCellValue = Left(Cell.Value, StringLenLim)
                             Cell.Value = NewCellValue
                         Else
                             MsgBox "Cannot split value in that column"
