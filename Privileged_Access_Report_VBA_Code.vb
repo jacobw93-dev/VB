@@ -308,18 +308,18 @@ End Sub
 Module1
 
 Public Function SheetProtected(TargetSheet As Worksheet) As Boolean
-     'Function purpose:  To evaluate if a worksheet is protected
-     
+    'Function purpose:  To evaluate if a worksheet is protected
+    
     If TargetSheet.ProtectContents = True Then
         SheetProtected = True
     Else
         SheetProtected = False
     End If
-     
+    
 End Function
 
 Public Sub UnlockSheets()
-
+    
     Dim wb          As Workbook
     Dim ws          As Worksheet
     
@@ -339,7 +339,6 @@ Public Sub UnlockSheets()
             ws.Cells.FormulaHidden = False
         End If
     Next ws
-
     
 End Sub
 
@@ -354,7 +353,7 @@ Public Sub OnStart()
     
     ActiveSheet.EnableCalculation = False
     Application.AskToUpdateLinks = False
-    Application.Calculation = xlCalculationManual ' xlAutomatic
+    Application.Calculation = xlCalculationManual        ' xlAutomatic
     Application.DisplayAlerts = False
     Application.EnableEvents = False
     Application.ScreenUpdating = False
@@ -371,8 +370,8 @@ Public Sub OnEnd()
     Set wb = ThisWorkbook
     
     ThisWorkbook.Activate
-       
-'    Call LockSheets
+    
+    '    Call LockSheets
     
     ActiveSheet.EnableCalculation = True
     Application.AskToUpdateLinks = True
@@ -384,10 +383,10 @@ Public Sub OnEnd()
 End Sub
 
 Public Sub DataValidationList()
-
-    Dim rng As Range
-    Dim ws As Worksheet
-
+    
+    Dim rng         As Range
+    Dim ws          As Worksheet
+    
     Set ws = ThisWorkbook.Worksheets("Edit")
     ws.Activate
     llastrow = Range(ActiveSheet.Range("A65536").End(XlDirection.xlUp).Address).Row
@@ -396,16 +395,16 @@ Public Sub DataValidationList()
     rng.Select
     
     If SheetProtected(ws) Then
-       Call UnlockSheets
+        Call UnlockSheets
     End If
     
     With rng.Validation
         .Delete
         .Add _
-            Type:=xlValidateList, _
-            AlertStyle:=xlValidAlertStop, _
-            Operator:=xlBetween, _
-            Formula1:="0,1,2"
+             Type:=xlValidateList, _
+             AlertStyle:=xlValidAlertStop, _
+             Operator:=xlBetween, _
+             Formula1:="0,1,2"
         .IgnoreBlank = True
         .InCellDropdown = True
         .ShowInput = True
@@ -418,8 +417,8 @@ Public Sub DataValidationList()
         .ClearComments
         If .Comment Is Nothing Then
             .AddCommentThreaded ( _
-                "0 - Not approved;" & vbLf & "1 - Pending approval;" & vbLf & "2 - Approved;" _
-                )
+                                "0 - Not approved;" & vbLf & "1 - Pending approval;" & vbLf & "2 - Approved;" _
+                                )
         End If
     End With
     
@@ -429,11 +428,11 @@ Public Sub RemoveHashCharacters()
     
     Dim rng         As Range
     Dim Cell           As Range
-    Dim llastrow As Long
-    Dim DataRange As Variant
-    Dim Irow As Long, rowcnt As Integer
-    Dim Icol As Integer, colcnt As Integer
-    Dim MyVar As String
+    Dim llastrow    As Long
+    Dim DataRange   As Variant
+    Dim Irow        As Long, rowcnt As Integer
+    Dim Icol        As Integer, colcnt As Integer
+    Dim MyVar       As String
     
     llastrow = Range(Range("A65536").End(XlDirection.xlUp).Address).Row
     Set rng = ActiveSheet.Range("A6", Range("A" & llastrow).End(xlToRight))
@@ -441,40 +440,21 @@ Public Sub RemoveHashCharacters()
     DataRange = rng.Value
     rowcnt = rng.Rows.Count
     colcnt = rng.Columns.Count
-'    Debug.Print ("Range " & rng.Address & " has " & Irow & " rows and " & Icol & " columns.")
-
+    '    Debug.Print ("Range " & rng.Address & " has " & Irow & " rows and " & Icol & " columns.")
+    
     For Irow = 1 To rowcnt
-      For Icol = 1 To colcnt
-      MyVar = DataRange(Irow, Icol)
-      If MyVar <> "" Then
-        If MyVar = "#" Then
-            MyVar = ""
-        End If
-        DataRange(Irow, Icol) = MyVar
-      End If
-    Next Icol
+        For Icol = 1 To colcnt
+            MyVar = DataRange(Irow, Icol)
+            If MyVar <> "" Then
+                If MyVar = "#" Then
+                    MyVar = ""
+                End If
+                DataRange(Irow, Icol) = MyVar
+            End If
+        Next Icol
     Next Irow
     rng.Value = DataRange
     
-'    Replace method #1
-'    rng.Select
-'
-'    Selection.Replace _
-'            What:="#", _
-'            Replacement:="", _
-'            LookAt:=xlWhole, _
-'            SearchOrder:=xlByRows, _
-'            MatchCase:=False, _
-'            SearchFormat:=False, _
-'            ReplaceFormat:=False
-
-'    Replace method #2
-'    For Each Cell In rng.Cells
-'        If Cell.Value = "#" Then
-'            Cell.Value = ""
-'        End If
-'    Next Cell
-                    
     rng.Columns.EntireColumn.AutoFit
     rng.Rows.EntireRow.AutoFit
     
@@ -484,64 +464,49 @@ Public Sub RestoreLineBreaks()
     
     Dim rng         As Range
     Dim Cell           As Range
-    Dim llastrow As Long
-    Dim DataRange As Variant
-    Dim Irow As Long, rowcnt As Integer
-    Dim Icol As Integer, colcnt As Integer
-    Dim MyVar As String
-
+    Dim llastrow    As Long
+    Dim DataRange   As Variant
+    Dim Irow        As Long, rowcnt As Integer
+    Dim Icol        As Integer, colcnt As Integer
+    Dim MyVar       As String, MyVar2 As String
     
     llastrow = Range(Range("A65536").End(XlDirection.xlUp).Address).Row
     Set rng = ActiveSheet.Range("Q6", Range("Q" & llastrow).End(xlToRight))
-    DataRange = rng.Value
     rowcnt = rng.Rows.Count
     colcnt = rng.Columns.Count
-'    Debug.Print ("Range " & rng.Address & " has " & Irow & " rows and " & Icol & " columns.")
-
-    For Each Cell In rng.Cells
-        If (Cell.Column = 17 Or Cell.Column = 19) Then
-            Cell.Value = Cell.Value & Cell.Offset(, 1).Value
-            Cell.Offset(, 1).ClearContents
-        End If
-    Next Cell
+    '    Debug.Print ("Range " & rng.Address & " has " & Irow & " rows and " & Icol & " columns.")
+    
+    DataRange = rng.Value
     
     For Irow = 1 To rowcnt
-      For Icol = 1 To colcnt
-      MyVar = DataRange(Irow, Icol)
-      If MyVar <> "" Then
-        If Len(Replace(MyVar, "&&", "")) <> Len(MyVar) Then
-            MyVar = Replace(MyVar, "&&", vbCrLf)
-        End If
-        DataRange(Irow, Icol) = MyVar
-      End If
-    Next Icol
+        For Icol = 1 To colcnt
+            MyVar = DataRange(Irow, Icol)
+            If MyVar <> "" Then
+                If (Icol = 1 Or Icol = 3) Then
+                    MyVar2 = DataRange(Irow, Icol + 1)
+                    MyVar = MyVar & MyVar2
+                End If
+                
+                If (Icol = 2 Or Icol = 4) Then
+                    MyVar = Empty
+                End If
+                If Len(Replace(MyVar, "&&", "")) <> Len(MyVar) Then
+                    MyVar = Replace(MyVar, "&&", vbCrLf)
+                End If
+                DataRange(Irow, Icol) = MyVar
+            End If
+        Next Icol
     Next Irow
     rng.Value = DataRange
     
-'    Replace method #1
-'    rng.Select
-'
-'    Selection.Replace _
-'            What:="&&", _
-'            Replacement:=vbCrLf, _
-'            LookAt:=xlPart, _
-'            SearchOrder:=xlByRows, _
-'            MatchCase:=False, _
-'            SearchFormat:=False, _
-'            ReplaceFormat:=False
-
-'    Replace method #2
-'    For Each Cell In rng.Cells
-'        If Len(Replace(Cell.Value, "&&", "")) <> Len(Cell.Value) Then
-'            Cell.Value = Replace(Cell.Value, "&&", vbCrLf)
-'        End If
-'    Next Cell
-
+    rng.Columns.EntireColumn.AutoFit
+    rng.Rows.EntireRow.AutoFit
+    
 End Sub
 
 Public Sub SetPrintLayout(lRefreshDate As Double)
-
-    Dim ws As Worksheet
+    
+    Dim ws          As Worksheet
     Set ws = ThisWorkbook.Sheets("Export")
     
     ws.Activate
@@ -550,5 +515,6 @@ Public Sub SetPrintLayout(lRefreshDate As Double)
     Set rng = ws.Range("A1", Range("A" & llastrow).End(xlToRight))
     ws.PageSetup.PrintArea = rng.Address
     ws.PageSetup.CenterHeader = "QueryLastRefreshedAt: " & Format(lRefreshDate, "dddd, mmmm d, yyyy h:mm:ss")
-
+    
 End Sub
+
