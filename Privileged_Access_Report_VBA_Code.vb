@@ -544,6 +544,7 @@ Module1
 		
 		Dim rng         As Range
 		Dim Cell           As Range
+		Dim llastcol    As String
 		Dim llastrow    As Long
 		Dim DataRange   As Variant
 		Dim Irow        As Long, rowcnt As Integer
@@ -552,8 +553,9 @@ Module1
 		
 		Const LineSeparator As String = "&&"
 		
+		llastcol = Split(Cells(1, Range("A5").End(xlToRight).Column).Address, "$")(1)
 		llastrow = Range(Range("A65536").End(XlDirection.xlUp).Address).Row
-		Set rng = ActiveSheet.Range("Q6", Range("Q" & llastrow).End(xlToRight))
+		Set rng = ActiveSheet.Range("Q6", Range(llastcol & llastrow))
 		rowcnt = rng.Rows.Count
 		colcnt = rng.Columns.Count
 		
