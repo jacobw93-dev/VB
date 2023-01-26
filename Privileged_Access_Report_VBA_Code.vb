@@ -238,6 +238,7 @@ Sheet3(Edit)
 		Dim range_1     As Range
 		Dim i As Integer, ds As String, ds_name As String, ds_concat As String
 		Dim InfoBox As VbMsgBoxResult
+		Const AckTime As Integer = 3
 		
 		Call OnStart
 		
@@ -295,7 +296,6 @@ Sheet3(Edit)
 		Const AckTime As Integer = 3
 		
 		Set wb = ThisWorkbook
-		Set InfoBox = CreateObject("WScript.Shell")
 		
 		Call OnStart
 		
