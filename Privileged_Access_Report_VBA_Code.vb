@@ -145,12 +145,12 @@ ThisWorkBook
 Sheet3(Edit)
 
 	Private Sub Worksheet_Change(ByVal Target As Range)
-	' Procedure purpose:  To validate data in input-ready fields _
-	(check max. field length, split values in cells per columns, replace line breaks with "&&")
-
+		' Procedure purpose:  To validate data in input-ready fields _
+		(check max. field length, split values in cells per columns, replace line breaks with "&&")
+		
 		Dim ValidatedCells As Range
 		Dim Cell        As Range
-		Dim Result As Integer
+		Dim Result      As Integer
 		Dim NewCellValue As String, NewCellValue2 As String
 		Dim rng         As Range
 		Dim llastrow    As Long
@@ -158,75 +158,90 @@ Sheet3(Edit)
 		Const StringLenLim As Integer = 250
 		Const LineSeparator As String = "&&"
 		
-		Dim CurLenLim As Integer
-		Dim CondOpt As String
+		Dim CurLenLim   As Integer
+		Dim CondOpt     As String
+		Dim Mssg        As String
 		
 		llastrow = Range(ActiveSheet.Range("A65536").End(XlDirection.xlUp).Address).Row
 		
 		Set ValidatedCells = Intersect(Target, Target.Parent.Range("Q3:R" & llastrow, "T3:V" & llastrow))
 		If Not ValidatedCells Is Nothing Then
 			For Each Cell In ValidatedCells
-				NewCellValue = Replace(Replace(Cell.Value, vbCr, LineSeparator), vbLf, LineSeparator)
+				If Cell.Value <> "" Then
+					NewCellValue = Replace(Replace(Cell.Value, vbCr, LineSeparator), vbLf, LineSeparator)
+				End If
 				If Len(NewCellValue) > 250 Then
 					NewCellValue2 = Right(NewCellValue, Len(NewCellValue) - StringLenLim)
 				End If
-				If (Len(NewCellValue) > StringLenLim And Len(NewCellValue2) <= StringLenLim) Then
-					Result = MsgBox("The value" & _
-						   " inserted in cell " & Cell.Address & _
-						   " exceeds accepted field length by " & _
-						   Len(NewCellValue) - StringLenLim & " characters." & _
-						   vbCrLf & vbCrLf & _
-						   "Split it into 2 columns (Ok) or undo (Cancel)?", _
-						   vbQuestion + vbOKCancel)
+				If (Cell.Column = 17 Or Cell.Column = 20) Then
+					CurLenLim = StringLenLim * 2
+					CondOpt = " and split it into 2 columns "
+				Else
+					CurLenLim = StringLenLim
+					CondOpt = Empty
+				End If
+				
+				Mssg = "The value" & _
+						" inserted in cell " & Cell.Address & _
+						" exceeds accepted field length by " & _
+						Len(NewCellValue) - StringLenLim & " characters."
+				
+				If (Len(NewCellValue) > StringLenLim And Len(NewCellValue2) <= StringLenLim And (Cell.Column = 17 Or Cell.Column = 20)) Then
+					Result = MsgBox(Mssg & _
+							 vbCrLf & vbCrLf & _
+							 "Split it into 2 columns (Ok) or undo (Cancel)?", _
+							 vbQuestion + vbOKCancel)
 					If Result = vbOK Then
-						If (Cell.Column = 17 Or Cell.Column = 20) Then
-							Cell.Offset(, 1).Value = NewCellValue2
-							NewCellValue = Left(NewCellValue, StringLenLim)
-							Cell.Value = NewCellValue
-						Else
-							MsgBox "Cannot split value in that column"
-							Application.Undo
-							Exit Sub
-						End If
+						Cell.Offset(, 1).Value = NewCellValue2
+						NewCellValue = Left(NewCellValue, StringLenLim)
+						Cell.Value = NewCellValue
 					Else
 						Application.Undo
 						Exit Sub
 					End If
 					Exit Sub
-				ElseIf (Len(NewCellValue) > StringLenLim And Len(NewCellValue2) > StringLenLim) Then
-					If (Cell.Column = 17 Or Cell.Column = 20) Then
-						CurLenLim = StringLenLim * 2
-						CondOpt = " and split it into 2 columns "
-					Else
-						CurLenLim = StringLenLim
-						CondOpt = Empty
-					End If
-					Result = MsgBox("The value" & _
-						   " inserted in cell " & Cell.Address & _
-						   " exceeds accepted field length by " & _
-						   Len(NewCellValue) - StringLenLim & " characters." & _
-						   vbCrLf & vbCrLf & _
-						   "Trim to " & CurLenLim & CondOpt & " (Ok) or undo (Cancel)?", _
-						   vbQuestion + vbOKCancel)
+				ElseIf (Len(NewCellValue) > StringLenLim And Len(NewCellValue2) <= StringLenLim And Not (Cell.Column = 17 And Cell.Column = 20)) Then
+					Result = MsgBox(Mssg & _
+							 vbCrLf & vbCrLf & _
+							 "Trim to " & CurLenLim & CondOpt & " (Ok) or undo (Cancel)?", _
+							 vbQuestion + vbOKCancel)
 					If Result = vbOK Then
-						If (Cell.Column = 17 Or Cell.Column = 20) Then
-							Cell.Offset(, 1).Value = Left(NewCellValue2, StringLenLim)
-							NewCellValue = Left(NewCellValue, StringLenLim)
-							Cell.Value = NewCellValue
-						ElseIf (Cell.Column = 18 Or Cell.Column = 21) Then
-							NewCellValue = Left(NewCellValue, StringLenLim)
-							Cell.Value = NewCellValue
-						Else
-							MsgBox "Cannot split value in that column"
-							Application.Undo
-							Exit Sub
-						End If
+						NewCellValue = Left(NewCellValue, StringLenLim)
+						Cell.Value = NewCellValue
+					Else
+						Application.Undo
+						Exit Sub
+					End If
+					Exit Sub
+				ElseIf (Len(NewCellValue) > StringLenLim And Len(NewCellValue2) > StringLenLim And (Cell.Column = 17 Or Cell.Column = 20)) Then
+					Result = MsgBox(Mssg & _
+							 vbCrLf & vbCrLf & _
+							 "Trim to " & CurLenLim & CondOpt & " (Ok) or undo (Cancel)?", _
+							 vbQuestion + vbOKCancel)
+					If Result = vbOK Then
+						Cell.Offset(, 1).Value = Left(NewCellValue2, StringLenLim)
+						NewCellValue = Left(NewCellValue, StringLenLim)
+						Cell.Value = NewCellValue
+					Else
+						Application.Undo
+						Exit Sub
+					End If
+					Exit Sub
+				ElseIf (Len(NewCellValue) > StringLenLim And Len(NewCellValue2) > StringLenLim And Not (Cell.Column = 17 And Cell.Column = 20)) Then
+					Result = MsgBox(Mssg & _
+							 vbCrLf & vbCrLf & _
+							 "Trim to " & CurLenLim & CondOpt & " (Ok) or undo (Cancel)?", _
+							 vbQuestion + vbOKCancel)
+					If Result = vbOK Then
+						NewCellValue = Left(NewCellValue, StringLenLim)
+						Cell.Value = NewCellValue
 					Else
 						Application.Undo
 						Exit Sub
 					End If
 					Exit Sub
 				End If
+				
 			Next Cell
 		End If
 	End Sub
