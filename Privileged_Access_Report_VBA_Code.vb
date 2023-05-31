@@ -1,6 +1,299 @@
 Privileged_Access_Report_VBA_Code.vb
 
 ------------------
+Edit_CA.cls
+
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Edit_CA"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+'@IgnoreModule UndeclaredVariable, UnassignedVariableUsage
+Option Explicit
+
+Private Sub Connect_CA_Click()
+    ' Procedure purpose:  To reconnect/refresh data sources
+
+    Dim lResult As Long
+    Dim lRet As Boolean
+    Dim i As Integer
+    Dim ds As String
+    Dim ds_concat As String
+    Dim InfoBox As VbMsgBoxResult
+    
+    Const AckTime As Integer = 3
+    
+    Call OnStart
+    
+    lRet = True
+    For i = 1 To 7
+        ds = "DS_" & i
+        lResult = Application.Run("SAPGetProperty", "IsDataSourceActive", ds)
+        lRet = lRet And lResult
+        If lRet = False Then
+            If ds_concat <> vbNullString Then
+                ds_concat = ds_concat & ", " & vbCrLf & "'" & ds & "'"
+            Else
+                ds_concat = "'" & ds & "'"
+            End If
+        End If
+    Next i
+    
+    If ds_concat <> vbNullString Then
+        MsgBox "Data Sources: " & vbCrLf & ds_concat & vbCrLf & " are inactive"
+    End If
+    
+    If lResult = False Then
+        
+        ThisWorkbook.Sheets("Edit_CA").Activate
+        ActiveSheet.Range("A1").Activate
+        
+        lResult = Application.Run("SAPLogOff", "True")
+        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
+        lResult = Application.Run("SAPExecuteCommand", "Refresh", "ALL")
+        
+        Call DataValidationList
+        
+        lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+        
+    Else
+        InfoBox = TimedMsgBox("You are already connected to the system" _
+                            & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                              "Connection Status", , AckTime)
+    End If
+    
+    Call Alignment
+    Call OnEnd
+End Sub
+
+Private Sub Save_CA_Click()
+    ' Procedure purpose:  To save data in Planning Query
+
+    Dim EndTime As Double
+    Dim StartTime As Double
+    Dim ds_alias As String: ds_alias = "DS_3"
+    Dim lResult As Long
+    Dim wb As Workbook
+    
+    Const AckTime As Integer = 3
+    
+    Set wb = ThisWorkbook
+    
+    Call OnStart
+    
+    lResult = Application.Run("SAPGetProperty", "IsDataSourceActive", ds_alias)
+    If lResult = True Then
+        
+        StartTime = Timer
+        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
+        lResult = Application.Run("SAPDeleteDesignRule", ds_alias)
+        lResult = Application.Run("SAPGetProperty", "IsDataSourceEditable", ds_alias)
+        If lResult = True Then
+            lResult = Application.Run("SAPGetProperty", "HasChangedPlanData", ds_alias)
+            If lResult = True Then
+                lResult = Application.Run("SAPExecuteCommand", "PlanDataSave")
+                lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
+            
+                Call DataValidationList
+                
+                EndTime = Timer
+                lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+                wb.Sheets("Edit_CA").Range("E1").Value = Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]"
+                
+                InfoBox = TimedMsgBox("Data saved in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
+                                    & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                                      "Save Status", , AckTime)
+            Else
+                InfoBox = TimedMsgBox("No data has been changed" _
+                                    & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                                      "Save Status", , AckTime)
+            End If
+            
+            lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+        
+        Else
+            InfoBox = TimedMsgBox("Cannot save the data, please check if the query is in 'change mode' (Analysis ribbon)" _
+                                & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                                  "Connection Status", , AckTime)
+            lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+        End If
+        
+    Else
+        InfoBox = TimedMsgBox("You are not connected to the system" _
+                            & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                              "Connection Status", , AckTime)
+    End If
+    
+    Call Alignment
+    Call OnEnd
+End Sub
+
+Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
+    ' Procedure purpose:  To enable floating buttons
+
+    On Error GoTo 0
+    With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
+        Connect_CA.Top = .Top + 0
+        Connect_CA.Left = .Left + 0
+        Save_CA.Top = .Top + 0
+        Save_CA.Left = .Left + 80
+    End With
+End Sub
+
+
+
+
+------------------
+Edit_SP.cls
+
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Edit_SP"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+'@IgnoreModule UndeclaredVariable
+Private Sub Connect_SP_Click()
+    ' Procedure purpose:  To reconnect/refresh data sources
+
+    Dim InfoBox As VbMsgBoxResult
+    Dim ds As String
+    Dim ds_concat As String
+    Dim i As Integer
+    Dim lResult As Long
+    Dim lRet As Boolean
+    
+    Const AckTime As Integer = 3
+    
+    Call OnStart
+    
+    lRet = True
+    For i = 1 To 7
+        ds = "DS_" & i
+        lResult = Application.Run("SAPGetProperty", "IsDataSourceActive", ds)
+        lRet = lRet And lResult
+        If lRet = False Then
+            If ds_concat <> vbNullString Then
+                ds_concat = ds_concat & ", " & vbCrLf & "'" & ds & "'"
+            Else
+                ds_concat = "'" & ds & "'"
+            End If
+        End If
+    Next i
+    
+    If ds_concat <> vbNullString Then
+        MsgBox "Data Sources: " & vbCrLf & ds_concat & vbCrLf & " are inactive"
+    End If
+    
+    If lResult = False Then
+        
+        ThisWorkbook.Sheets("Edit_SP").Activate
+        ActiveSheet.Range("A1").Activate
+        
+        lResult = Application.Run("SAPLogOff", "True")
+        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
+        lResult = Application.Run("SAPExecuteCommand", "Refresh", "ALL")
+        
+        Call DataValidationList
+        
+        lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+        
+    Else
+        InfoBox = TimedMsgBox("You are already connected to the system" _
+                            & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                              "Connection Status", , AckTime)
+    End If
+    
+    Call Alignment
+    Call OnEnd
+End Sub
+
+Private Sub Save_SP_Click()
+    ' Procedure purpose:  To save data in Planning Query
+
+    Dim EndTime As Double
+    Dim InfoBox As VbMsgBoxResult
+    Dim StartTime As Double
+    Dim ds_alias As String: ds_alias = "DS_5"
+    Dim lResult As Long
+    Dim wb As Workbook
+    
+    Const AckTime As Integer = 3
+    
+    Set wb = ThisWorkbook
+    
+    Call OnStart
+    
+    lResult = Application.Run("SAPGetProperty", "IsDataSourceActive", ds_alias)
+    If lResult = True Then
+        
+        StartTime = Timer
+        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
+        lResult = Application.Run("SAPDeleteDesignRule", ds_alias)
+        lResult = Application.Run("SAPGetProperty", "IsDataSourceEditable", ds_alias)
+        If lResult = True Then
+            lResult = Application.Run("SAPGetProperty", "HasChangedPlanData", ds_alias)
+            If lResult = True Then
+                lResult = Application.Run("SAPExecuteCommand", "PlanDataSave")
+                lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
+            
+                Call DataValidationList
+                
+                EndTime = Timer
+                lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+                wb.Sheets("Edit_SP").Range("E1").Value = Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]"
+                
+                InfoBox = TimedMsgBox("Data saved in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
+                                    & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                                      "Save Status", , AckTime)
+            Else
+                InfoBox = TimedMsgBox("No data has been changed" _
+                                    & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                                      "Save Status", , AckTime)
+            End If
+            
+            lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+        
+        Else
+            InfoBox = TimedMsgBox("Cannot save the data, please check if the query is in 'change mode' (Analysis ribbon)" _
+                                & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                                  "Connection Status", , AckTime)
+            lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+        End If
+        
+    Else
+        InfoBox = TimedMsgBox("You are not connected to the system" _
+                            & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                              "Connection Status", , AckTime)
+    End If
+    
+    Call Alignment
+    Call OnEnd
+End Sub
+
+Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
+    ' Procedure purpose:  To enable floating buttons
+
+    On Error GoTo 0
+    With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
+        Connect_SP.Top = .Top + 0
+        Connect_SP.Left = .Left + 0
+        Save_SP.Top = .Top + 0
+        Save_SP.Left = .Left + 80
+    End With
+End Sub
+
+
+
+
+------------------
 My_Module.bas
 
 Attribute VB_Name = "My_Module"
@@ -530,6 +823,299 @@ End Sub
 Privileged_Access_Report_VBA_Code.vb
 
 ------------------
+Edit_CA.cls
+
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Edit_CA"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+'@IgnoreModule UndeclaredVariable, UnassignedVariableUsage
+Option Explicit
+
+Private Sub Connect_CA_Click()
+    ' Procedure purpose:  To reconnect/refresh data sources
+
+    Dim lResult As Long
+    Dim lRet As Boolean
+    Dim i As Integer
+    Dim ds As String
+    Dim ds_concat As String
+    Dim InfoBox As VbMsgBoxResult
+    
+    Const AckTime As Integer = 3
+    
+    Call OnStart
+    
+    lRet = True
+    For i = 1 To 7
+        ds = "DS_" & i
+        lResult = Application.Run("SAPGetProperty", "IsDataSourceActive", ds)
+        lRet = lRet And lResult
+        If lRet = False Then
+            If ds_concat <> vbNullString Then
+                ds_concat = ds_concat & ", " & vbCrLf & "'" & ds & "'"
+            Else
+                ds_concat = "'" & ds & "'"
+            End If
+        End If
+    Next i
+    
+    If ds_concat <> vbNullString Then
+        MsgBox "Data Sources: " & vbCrLf & ds_concat & vbCrLf & " are inactive"
+    End If
+    
+    If lResult = False Then
+        
+        ThisWorkbook.Sheets("Edit_CA").Activate
+        ActiveSheet.Range("A1").Activate
+        
+        lResult = Application.Run("SAPLogOff", "True")
+        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
+        lResult = Application.Run("SAPExecuteCommand", "Refresh", "ALL")
+        
+        Call DataValidationList
+        
+        lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+        
+    Else
+        InfoBox = TimedMsgBox("You are already connected to the system" _
+                            & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                              "Connection Status", , AckTime)
+    End If
+    
+    Call Alignment
+    Call OnEnd
+End Sub
+
+Private Sub Save_CA_Click()
+    ' Procedure purpose:  To save data in Planning Query
+
+    Dim EndTime As Double
+    Dim StartTime As Double
+    Dim ds_alias As String: ds_alias = "DS_3"
+    Dim lResult As Long
+    Dim wb As Workbook
+    
+    Const AckTime As Integer = 3
+    
+    Set wb = ThisWorkbook
+    
+    Call OnStart
+    
+    lResult = Application.Run("SAPGetProperty", "IsDataSourceActive", ds_alias)
+    If lResult = True Then
+        
+        StartTime = Timer
+        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
+        lResult = Application.Run("SAPDeleteDesignRule", ds_alias)
+        lResult = Application.Run("SAPGetProperty", "IsDataSourceEditable", ds_alias)
+        If lResult = True Then
+            lResult = Application.Run("SAPGetProperty", "HasChangedPlanData", ds_alias)
+            If lResult = True Then
+                lResult = Application.Run("SAPExecuteCommand", "PlanDataSave")
+                lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
+            
+                Call DataValidationList
+                
+                EndTime = Timer
+                lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+                wb.Sheets("Edit_CA").Range("E1").Value = Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]"
+                
+                InfoBox = TimedMsgBox("Data saved in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
+                                    & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                                      "Save Status", , AckTime)
+            Else
+                InfoBox = TimedMsgBox("No data has been changed" _
+                                    & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                                      "Save Status", , AckTime)
+            End If
+            
+            lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+        
+        Else
+            InfoBox = TimedMsgBox("Cannot save the data, please check if the query is in 'change mode' (Analysis ribbon)" _
+                                & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                                  "Connection Status", , AckTime)
+            lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+        End If
+        
+    Else
+        InfoBox = TimedMsgBox("You are not connected to the system" _
+                            & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                              "Connection Status", , AckTime)
+    End If
+    
+    Call Alignment
+    Call OnEnd
+End Sub
+
+Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
+    ' Procedure purpose:  To enable floating buttons
+
+    On Error GoTo 0
+    With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
+        Connect_CA.Top = .Top + 0
+        Connect_CA.Left = .Left + 0
+        Save_CA.Top = .Top + 0
+        Save_CA.Left = .Left + 80
+    End With
+End Sub
+
+
+
+
+------------------
+Edit_SP.cls
+
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Edit_SP"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+'@IgnoreModule UndeclaredVariable
+Private Sub Connect_SP_Click()
+    ' Procedure purpose:  To reconnect/refresh data sources
+
+    Dim InfoBox As VbMsgBoxResult
+    Dim ds As String
+    Dim ds_concat As String
+    Dim i As Integer
+    Dim lResult As Long
+    Dim lRet As Boolean
+    
+    Const AckTime As Integer = 3
+    
+    Call OnStart
+    
+    lRet = True
+    For i = 1 To 7
+        ds = "DS_" & i
+        lResult = Application.Run("SAPGetProperty", "IsDataSourceActive", ds)
+        lRet = lRet And lResult
+        If lRet = False Then
+            If ds_concat <> vbNullString Then
+                ds_concat = ds_concat & ", " & vbCrLf & "'" & ds & "'"
+            Else
+                ds_concat = "'" & ds & "'"
+            End If
+        End If
+    Next i
+    
+    If ds_concat <> vbNullString Then
+        MsgBox "Data Sources: " & vbCrLf & ds_concat & vbCrLf & " are inactive"
+    End If
+    
+    If lResult = False Then
+        
+        ThisWorkbook.Sheets("Edit_SP").Activate
+        ActiveSheet.Range("A1").Activate
+        
+        lResult = Application.Run("SAPLogOff", "True")
+        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
+        lResult = Application.Run("SAPExecuteCommand", "Refresh", "ALL")
+        
+        Call DataValidationList
+        
+        lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+        
+    Else
+        InfoBox = TimedMsgBox("You are already connected to the system" _
+                            & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                              "Connection Status", , AckTime)
+    End If
+    
+    Call Alignment
+    Call OnEnd
+End Sub
+
+Private Sub Save_SP_Click()
+    ' Procedure purpose:  To save data in Planning Query
+
+    Dim EndTime As Double
+    Dim InfoBox As VbMsgBoxResult
+    Dim StartTime As Double
+    Dim ds_alias As String: ds_alias = "DS_5"
+    Dim lResult As Long
+    Dim wb As Workbook
+    
+    Const AckTime As Integer = 3
+    
+    Set wb = ThisWorkbook
+    
+    Call OnStart
+    
+    lResult = Application.Run("SAPGetProperty", "IsDataSourceActive", ds_alias)
+    If lResult = True Then
+        
+        StartTime = Timer
+        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
+        lResult = Application.Run("SAPDeleteDesignRule", ds_alias)
+        lResult = Application.Run("SAPGetProperty", "IsDataSourceEditable", ds_alias)
+        If lResult = True Then
+            lResult = Application.Run("SAPGetProperty", "HasChangedPlanData", ds_alias)
+            If lResult = True Then
+                lResult = Application.Run("SAPExecuteCommand", "PlanDataSave")
+                lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
+            
+                Call DataValidationList
+                
+                EndTime = Timer
+                lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+                wb.Sheets("Edit_SP").Range("E1").Value = Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]"
+                
+                InfoBox = TimedMsgBox("Data saved in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
+                                    & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                                      "Save Status", , AckTime)
+            Else
+                InfoBox = TimedMsgBox("No data has been changed" _
+                                    & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                                      "Save Status", , AckTime)
+            End If
+            
+            lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+        
+        Else
+            InfoBox = TimedMsgBox("Cannot save the data, please check if the query is in 'change mode' (Analysis ribbon)" _
+                                & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                                  "Connection Status", , AckTime)
+            lResult = Application.Run("SAPSetRefreshBehaviour", "On")
+        End If
+        
+    Else
+        InfoBox = TimedMsgBox("You are not connected to the system" _
+                            & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
+                              "Connection Status", , AckTime)
+    End If
+    
+    Call Alignment
+    Call OnEnd
+End Sub
+
+Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
+    ' Procedure purpose:  To enable floating buttons
+
+    On Error GoTo 0
+    With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
+        Connect_SP.Top = .Top + 0
+        Connect_SP.Left = .Left + 0
+        Save_SP.Top = .Top + 0
+        Save_SP.Left = .Left + 80
+    End With
+End Sub
+
+
+
+
+------------------
 My_Module.bas
 
 Attribute VB_Name = "My_Module"
@@ -1058,299 +1644,6 @@ End Sub
 
 
 ------------------
-Sheet3.cls
-
-VERSION 1.0 CLASS
-BEGIN
-  MultiUse = -1  'True
-END
-Attribute VB_Name = "Sheet3"
-Attribute VB_GlobalNameSpace = False
-Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = True
-'@IgnoreModule UndeclaredVariable, UnassignedVariableUsage
-Option Explicit
-
-Private Sub Connect_CA_Click()
-    ' Procedure purpose:  To reconnect/refresh data sources
-
-    Dim lResult As Long
-    Dim lRet As Boolean
-    Dim i As Integer
-    Dim ds As String
-    Dim ds_concat As String
-    Dim InfoBox As VbMsgBoxResult
-    
-    Const AckTime As Integer = 3
-    
-    Call OnStart
-    
-    lRet = True
-    For i = 1 To 7
-        ds = "DS_" & i
-        lResult = Application.Run("SAPGetProperty", "IsDataSourceActive", ds)
-        lRet = lRet And lResult
-        If lRet = False Then
-            If ds_concat <> vbNullString Then
-                ds_concat = ds_concat & ", " & vbCrLf & "'" & ds & "'"
-            Else
-                ds_concat = "'" & ds & "'"
-            End If
-        End If
-    Next i
-    
-    If ds_concat <> vbNullString Then
-        MsgBox "Data Sources: " & vbCrLf & ds_concat & vbCrLf & " are inactive"
-    End If
-    
-    If lResult = False Then
-        
-        ThisWorkbook.Sheets("Edit_CA").Activate
-        ActiveSheet.Range("A1").Activate
-        
-        lResult = Application.Run("SAPLogOff", "True")
-        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
-        lResult = Application.Run("SAPExecuteCommand", "Refresh", "ALL")
-        
-        Call DataValidationList
-        
-        lResult = Application.Run("SAPSetRefreshBehaviour", "On")
-        
-    Else
-        InfoBox = TimedMsgBox("You are already connected to the system" _
-                            & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
-                              "Connection Status", , AckTime)
-    End If
-    
-    Call Alignment
-    Call OnEnd
-End Sub
-
-Private Sub Save_CA_Click()
-    ' Procedure purpose:  To save data in Planning Query
-
-    Dim EndTime As Double
-    Dim StartTime As Double
-    Dim ds_alias As String: ds_alias = "DS_3"
-    Dim lResult As Long
-    Dim wb As Workbook
-    
-    Const AckTime As Integer = 3
-    
-    Set wb = ThisWorkbook
-    
-    Call OnStart
-    
-    lResult = Application.Run("SAPGetProperty", "IsDataSourceActive", ds_alias)
-    If lResult = True Then
-        
-        StartTime = Timer
-        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
-        lResult = Application.Run("SAPDeleteDesignRule", ds_alias)
-        lResult = Application.Run("SAPGetProperty", "IsDataSourceEditable", ds_alias)
-        If lResult = True Then
-            lResult = Application.Run("SAPGetProperty", "HasChangedPlanData", ds_alias)
-            If lResult = True Then
-                lResult = Application.Run("SAPExecuteCommand", "PlanDataSave")
-                lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
-            
-                Call DataValidationList
-                
-                EndTime = Timer
-                lResult = Application.Run("SAPSetRefreshBehaviour", "On")
-                wb.Sheets("Edit_CA").Range("E1").Value = Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]"
-                
-                InfoBox = TimedMsgBox("Data saved in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
-                                    & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
-                                      "Save Status", , AckTime)
-            Else
-                InfoBox = TimedMsgBox("No data has been changed" _
-                                    & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
-                                      "Save Status", , AckTime)
-            End If
-            
-            lResult = Application.Run("SAPSetRefreshBehaviour", "On")
-        
-        Else
-            InfoBox = TimedMsgBox("Cannot save the data, please check if the query is in 'change mode' (Analysis ribbon)" _
-                                & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
-                                  "Connection Status", , AckTime)
-            lResult = Application.Run("SAPSetRefreshBehaviour", "On")
-        End If
-        
-    Else
-        InfoBox = TimedMsgBox("You are not connected to the system" _
-                            & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
-                              "Connection Status", , AckTime)
-    End If
-    
-    Call Alignment
-    Call OnEnd
-End Sub
-
-Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
-    ' Procedure purpose:  To enable floating buttons
-
-    On Error GoTo 0
-    With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
-        Connect_CA.Top = .Top + 0
-        Connect_CA.Left = .Left + 0
-        Save_CA.Top = .Top + 0
-        Save_CA.Left = .Left + 80
-    End With
-End Sub
-
-
-
-
-------------------
-Sheet5.cls
-
-VERSION 1.0 CLASS
-BEGIN
-  MultiUse = -1  'True
-END
-Attribute VB_Name = "Sheet5"
-Attribute VB_GlobalNameSpace = False
-Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = True
-Attribute VB_Exposed = True
-'@IgnoreModule UndeclaredVariable
-Private Sub Connect_SP_Click()
-    ' Procedure purpose:  To reconnect/refresh data sources
-
-    Dim InfoBox As VbMsgBoxResult
-    Dim ds As String
-    Dim ds_concat As String
-    Dim i As Integer
-    Dim lResult As Long
-    Dim lRet As Boolean
-    
-    Const AckTime As Integer = 3
-    
-    Call OnStart
-    
-    lRet = True
-    For i = 1 To 7
-        ds = "DS_" & i
-        lResult = Application.Run("SAPGetProperty", "IsDataSourceActive", ds)
-        lRet = lRet And lResult
-        If lRet = False Then
-            If ds_concat <> vbNullString Then
-                ds_concat = ds_concat & ", " & vbCrLf & "'" & ds & "'"
-            Else
-                ds_concat = "'" & ds & "'"
-            End If
-        End If
-    Next i
-    
-    If ds_concat <> vbNullString Then
-        MsgBox "Data Sources: " & vbCrLf & ds_concat & vbCrLf & " are inactive"
-    End If
-    
-    If lResult = False Then
-        
-        ThisWorkbook.Sheets("Edit_SP").Activate
-        ActiveSheet.Range("A1").Activate
-        
-        lResult = Application.Run("SAPLogOff", "True")
-        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
-        lResult = Application.Run("SAPExecuteCommand", "Refresh", "ALL")
-        
-        Call DataValidationList
-        
-        lResult = Application.Run("SAPSetRefreshBehaviour", "On")
-        
-    Else
-        InfoBox = TimedMsgBox("You are already connected to the system" _
-                            & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
-                              "Connection Status", , AckTime)
-    End If
-    
-    Call Alignment
-    Call OnEnd
-End Sub
-
-Private Sub Save_SP_Click()
-    ' Procedure purpose:  To save data in Planning Query
-
-    Dim EndTime As Double
-    Dim InfoBox As VbMsgBoxResult
-    Dim StartTime As Double
-    Dim ds_alias As String: ds_alias = "DS_5"
-    Dim lResult As Long
-    Dim wb As Workbook
-    
-    Const AckTime As Integer = 3
-    
-    Set wb = ThisWorkbook
-    
-    Call OnStart
-    
-    lResult = Application.Run("SAPGetProperty", "IsDataSourceActive", ds_alias)
-    If lResult = True Then
-        
-        StartTime = Timer
-        lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
-        lResult = Application.Run("SAPDeleteDesignRule", ds_alias)
-        lResult = Application.Run("SAPGetProperty", "IsDataSourceEditable", ds_alias)
-        If lResult = True Then
-            lResult = Application.Run("SAPGetProperty", "HasChangedPlanData", ds_alias)
-            If lResult = True Then
-                lResult = Application.Run("SAPExecuteCommand", "PlanDataSave")
-                lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
-            
-                Call DataValidationList
-                
-                EndTime = Timer
-                lResult = Application.Run("SAPSetRefreshBehaviour", "On")
-                wb.Sheets("Edit_SP").Range("E1").Value = Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]"
-                
-                InfoBox = TimedMsgBox("Data saved in : " & Format((EndTime - StartTime) / 86400, "hh:mm:ss") & " [hh:mm:ss]" _
-                                    & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
-                                      "Save Status", , AckTime)
-            Else
-                InfoBox = TimedMsgBox("No data has been changed" _
-                                    & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
-                                      "Save Status", , AckTime)
-            End If
-            
-            lResult = Application.Run("SAPSetRefreshBehaviour", "On")
-        
-        Else
-            InfoBox = TimedMsgBox("Cannot save the data, please check if the query is in 'change mode' (Analysis ribbon)" _
-                                & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
-                                  "Connection Status", , AckTime)
-            lResult = Application.Run("SAPSetRefreshBehaviour", "On")
-        End If
-        
-    Else
-        InfoBox = TimedMsgBox("You are not connected to the system" _
-                            & vbCrLf & vbCrLf & "(This window will close in " & AckTime & " seconds)", _
-                              "Connection Status", , AckTime)
-    End If
-    
-    Call Alignment
-    Call OnEnd
-End Sub
-
-Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
-    ' Procedure purpose:  To enable floating buttons
-
-    On Error GoTo 0
-    With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
-        Connect_SP.Top = .Top + 0
-        Connect_SP.Left = .Left + 0
-        Save_SP.Top = .Top + 0
-        Save_SP.Left = .Left + 80
-    End With
-End Sub
-
-
-
-
-------------------
 ThisWorkbook.cls
 
 VERSION 1.0 CLASS
@@ -1363,6 +1656,39 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Option Explicit
+'Private Sub Workbook_Activate()
+'    Application.CommandBars("Ply").Enabled = False
+'End Sub
+'Private Sub Workbook_Deactivate()
+'    Application.CommandBars("Ply").Enabled = True
+'End Sub
+'Private Sub Workbook_SheetDeactivate(ByVal Sh As Object)
+'    Dim ws As Worksheet
+'    Dim order() As Variant
+'    Dim i As Long
+'
+'    ReDim order(1 To ThisWorkbook.Worksheets.count) ' Resize the array to hold all sheet names
+'
+'    ' Loop through each worksheet and store its name in the array
+'    For Each ws In ThisWorkbook.Worksheets
+'        i = i + 1
+'        order(i) = ws.Name
+'    Next ws
+'
+'    ' Check if the current sheet's name matches its original position in the order array
+'    If Sh.Name <> order(Sh.Index) Then
+'        Application.EnableEvents = False ' Disable events to prevent recursive triggering
+'
+'        ' Find the correct position of the current sheet and move it accordingly
+'        If Application.Match(Sh.Name, order, False) = 1 Then
+'            Worksheets(order(1)).Move Before:=Worksheets(1)
+'        Else
+'            Sh.Move After:=Worksheets(order(Application.Match(Sh.Name, order, False) - 1))
+'        End If
+'
+'        Application.EnableEvents = True ' Enable events again
+'    End If
+'End Sub
 
 Public Sub Workbook_open()
     ' Procedure purpose:  To enable SAP Analysis plug-in, reconnect/refresh all data sources to BW system
@@ -1741,3 +2067,7 @@ Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal target As Range)
         End If
     End If
 End Sub
+
+
+
+
