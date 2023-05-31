@@ -15,8 +15,8 @@ Attribute VB_Exposed = True
 '@IgnoreModule UndeclaredVariable, UnassignedVariableUsage
 Option Explicit
 
+' Procedure purpose:  To reconnect/refresh data sources
 Private Sub Connect_CA_Click()
-    ' Procedure purpose:  To reconnect/refresh data sources
 
     Dim lResult As Long
     Dim lRet As Boolean
@@ -70,8 +70,8 @@ Private Sub Connect_CA_Click()
     Call OnEnd
 End Sub
 
+' Procedure purpose:  To save data in Planning Query
 Private Sub Save_CA_Click()
-    ' Procedure purpose:  To save data in Planning Query
 
     Dim EndTime As Double
     Dim StartTime As Double
@@ -132,8 +132,8 @@ Private Sub Save_CA_Click()
     Call OnEnd
 End Sub
 
+' Procedure purpose:  To enable floating buttons
 Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
-    ' Procedure purpose:  To enable floating buttons
 
     On Error GoTo 0
     With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
@@ -160,8 +160,8 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '@IgnoreModule UndeclaredVariable
+' Procedure purpose:  To reconnect/refresh data sources
 Private Sub Connect_SP_Click()
-    ' Procedure purpose:  To reconnect/refresh data sources
 
     Dim InfoBox As VbMsgBoxResult
     Dim ds As String
@@ -215,8 +215,8 @@ Private Sub Connect_SP_Click()
     Call OnEnd
 End Sub
 
+' Procedure purpose:  To save data in Planning Query
 Private Sub Save_SP_Click()
-    ' Procedure purpose:  To save data in Planning Query
 
     Dim EndTime As Double
     Dim InfoBox As VbMsgBoxResult
@@ -278,8 +278,8 @@ Private Sub Save_SP_Click()
     Call OnEnd
 End Sub
 
+' Procedure purpose:  To enable floating buttons
 Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
-    ' Procedure purpose:  To enable floating buttons
 
     On Error GoTo 0
     With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
@@ -309,8 +309,8 @@ ByVal xwlange As Long, _
 ByVal xTimeOut As Long) _
 As Long
 
+' Function purpose:  To determine first filled row and last filled column
 Public Function GetLastFilledColumnAndFirstFilledRow() As Variant
-    ' Function purpose:  To determine first filled row and last filled column
     
     Dim firstFilledRow As Long
     Dim lastFilledColumn As Long
@@ -343,15 +343,15 @@ Public Function TimedMsgBox( _
     
 End Function
 
+' Function purpose:  To evaluate if a worksheet is protected
 Public Function SheetProtected(TargetSheet As Worksheet) As Boolean
-    ' Function purpose:  To evaluate if a worksheet is protected
     
     SheetProtected = TargetSheet.ProtectContents
     
 End Function
 
+' Procedure purpose:  To unlock all worksheets in this workbook
 Public Sub UnlockSheets()
-    ' Procedure purpose:  To unlock all worksheets in this workbook
     
     Dim wb          As Workbook
     Dim ws          As Worksheet
@@ -375,8 +375,8 @@ Public Sub UnlockSheets()
     
 End Sub
 
+' Procedure purpose:  To reconnect with the SAP data source
 Public Sub Reconnect()
-    ' Procedure purpose:  To reconnect with the SAP data source
     Dim lResult     As Long
     
     lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
@@ -389,8 +389,8 @@ Public Sub Reconnect()
     
 End Sub
 
+' Procedure purpose:  To disable immediate calculations, screen updates, events, messages
 Public Sub OnStart()
-    ' Procedure purpose:  To disable immediate calculations, screen updates, events, messages
 
     ThisWorkbook.Activate
     
@@ -405,8 +405,8 @@ Public Sub OnStart()
     
 End Sub
 
+' Procedure purpose:  To enable immediate calculations, screen updates, events, messages
 Public Sub OnEnd()
-    ' Procedure purpose:  To enable immediate calculations, screen updates, events, messages
     
     ThisWorkbook.Activate
     
@@ -419,8 +419,8 @@ Public Sub OnEnd()
     
 End Sub
 
+' Procedure purpose:  To add data validation list on certain range (Approval flag)
 Public Sub DataValidationList()
-    ' Procedure purpose:  To add data validation list on certain range (Approval flag)
     
     Dim cell As Range
     Dim firstRow As Long
@@ -486,8 +486,8 @@ Public Sub DataValidationList()
     
 End Sub
 
+' Procedure purpose:  To add comment on "Approval Flag" header
 Public Sub Comments()
-    ' Procedure purpose:  To add comment on "Approval Flag" header
 
     Dim cell As Range
     Dim firstRow As Long
@@ -534,8 +534,8 @@ Public Sub Comments()
     End With
 End Sub
 
+' Procedure purpose:  To align columns
 Public Sub Alignment()
-    ' Procedure purpose:  To align columns
 
     Dim StartRow As String
     Dim cell As Range
@@ -598,8 +598,8 @@ Public Sub Alignment()
     
 End Sub
 
+' Procedure purpose:  To change columns visiblity
 Public Sub Columns_Visibility()
-    ' Procedure purpose:  To change columns visiblity
     
     Dim StartRow As Integer
     Dim lastColumn As Variant
@@ -664,8 +664,8 @@ Public Sub Columns_Visibility()
     
 End Sub
 
+' Procedure purpose:  To replace "#" characters with blank value in particular range on "Export" tab
 Public Sub RemoveHashCharacters(rng As Range)
-    ' Procedure purpose:  To replace "#" characters with blank value in particular range on "Export" tab
 
     Dim Cell_1 As String
     Dim Cell_2 As String
@@ -700,8 +700,8 @@ Public Sub RemoveHashCharacters(rng As Range)
     
 End Sub
 
+' Procedure purpose:  To replace "&&" with line breaks (VbCrLf) in certain range on the "Export" tab _
 Public Sub RestoreLineBreaks(rng As Range)
-    ' Procedure purpose:  To replace "&&" with line breaks (VbCrLf) in certain range on the "Export" tab _
     and to merge cells that were splitted due to max. field length (250)
     
     Dim Cell_1 As String
@@ -743,8 +743,8 @@ Public Sub RestoreLineBreaks(rng As Range)
     
 End Sub
 
+' Procedure purpose:  To set print area, header information (Query last refresh date & time) on the "Export" tab
 Public Sub SetPrintLayout(lRefreshDate As Double)
-    ' Procedure purpose:  To set print area, header information (Query last refresh date & time) on the "Export" tab
     
     Dim llastrow    As Long
     Dim rng         As Range
@@ -837,8 +837,8 @@ Attribute VB_Exposed = True
 '@IgnoreModule UndeclaredVariable, UnassignedVariableUsage
 Option Explicit
 
+' Procedure purpose:  To reconnect/refresh data sources
 Private Sub Connect_CA_Click()
-    ' Procedure purpose:  To reconnect/refresh data sources
 
     Dim lResult As Long
     Dim lRet As Boolean
@@ -892,8 +892,8 @@ Private Sub Connect_CA_Click()
     Call OnEnd
 End Sub
 
+' Procedure purpose:  To save data in Planning Query
 Private Sub Save_CA_Click()
-    ' Procedure purpose:  To save data in Planning Query
 
     Dim EndTime As Double
     Dim StartTime As Double
@@ -954,8 +954,8 @@ Private Sub Save_CA_Click()
     Call OnEnd
 End Sub
 
+' Procedure purpose:  To enable floating buttons
 Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
-    ' Procedure purpose:  To enable floating buttons
 
     On Error GoTo 0
     With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
@@ -982,8 +982,8 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '@IgnoreModule UndeclaredVariable
+' Procedure purpose:  To reconnect/refresh data sources
 Private Sub Connect_SP_Click()
-    ' Procedure purpose:  To reconnect/refresh data sources
 
     Dim InfoBox As VbMsgBoxResult
     Dim ds As String
@@ -1037,8 +1037,8 @@ Private Sub Connect_SP_Click()
     Call OnEnd
 End Sub
 
+' Procedure purpose:  To save data in Planning Query
 Private Sub Save_SP_Click()
-    ' Procedure purpose:  To save data in Planning Query
 
     Dim EndTime As Double
     Dim InfoBox As VbMsgBoxResult
@@ -1100,8 +1100,8 @@ Private Sub Save_SP_Click()
     Call OnEnd
 End Sub
 
+' Procedure purpose:  To enable floating buttons
 Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
-    ' Procedure purpose:  To enable floating buttons
 
     On Error GoTo 0
     With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
@@ -1131,8 +1131,8 @@ ByVal xwlange As Long, _
 ByVal xTimeOut As Long) _
 As Long
 
+' Function purpose:  To determine first filled row and last filled column
 Public Function GetLastFilledColumnAndFirstFilledRow() As Variant
-    ' Function purpose:  To determine first filled row and last filled column
     
     Dim firstFilledRow As Long
     Dim lastFilledColumn As Long
@@ -1165,15 +1165,15 @@ Public Function TimedMsgBox( _
     
 End Function
 
+' Function purpose:  To evaluate if a worksheet is protected
 Public Function SheetProtected(TargetSheet As Worksheet) As Boolean
-    ' Function purpose:  To evaluate if a worksheet is protected
     
     SheetProtected = TargetSheet.ProtectContents
     
 End Function
 
+' Procedure purpose:  To unlock all worksheets in this workbook
 Public Sub UnlockSheets()
-    ' Procedure purpose:  To unlock all worksheets in this workbook
     
     Dim wb          As Workbook
     Dim ws          As Worksheet
@@ -1197,8 +1197,8 @@ Public Sub UnlockSheets()
     
 End Sub
 
+' Procedure purpose:  To reconnect with the SAP data source
 Public Sub Reconnect()
-    ' Procedure purpose:  To reconnect with the SAP data source
     Dim lResult     As Long
     
     lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
@@ -1211,8 +1211,8 @@ Public Sub Reconnect()
     
 End Sub
 
+' Procedure purpose:  To disable immediate calculations, screen updates, events, messages
 Public Sub OnStart()
-    ' Procedure purpose:  To disable immediate calculations, screen updates, events, messages
 
     ThisWorkbook.Activate
     
@@ -1227,8 +1227,8 @@ Public Sub OnStart()
     
 End Sub
 
+' Procedure purpose:  To enable immediate calculations, screen updates, events, messages
 Public Sub OnEnd()
-    ' Procedure purpose:  To enable immediate calculations, screen updates, events, messages
     
     ThisWorkbook.Activate
     
@@ -1241,8 +1241,8 @@ Public Sub OnEnd()
     
 End Sub
 
+' Procedure purpose:  To add data validation list on certain range (Approval flag)
 Public Sub DataValidationList()
-    ' Procedure purpose:  To add data validation list on certain range (Approval flag)
     
     Dim cell As Range
     Dim firstRow As Long
@@ -1308,8 +1308,8 @@ Public Sub DataValidationList()
     
 End Sub
 
+' Procedure purpose:  To add comment on "Approval Flag" header
 Public Sub Comments()
-    ' Procedure purpose:  To add comment on "Approval Flag" header
 
     Dim cell As Range
     Dim firstRow As Long
@@ -1356,8 +1356,8 @@ Public Sub Comments()
     End With
 End Sub
 
+' Procedure purpose:  To align columns
 Public Sub Alignment()
-    ' Procedure purpose:  To align columns
 
     Dim StartRow As String
     Dim cell As Range
@@ -1420,8 +1420,8 @@ Public Sub Alignment()
     
 End Sub
 
+' Procedure purpose:  To change columns visiblity
 Public Sub Columns_Visibility()
-    ' Procedure purpose:  To change columns visiblity
     
     Dim StartRow As Integer
     Dim lastColumn As Variant
@@ -1486,8 +1486,8 @@ Public Sub Columns_Visibility()
     
 End Sub
 
+' Procedure purpose:  To replace "#" characters with blank value in particular range on "Export" tab
 Public Sub RemoveHashCharacters(rng As Range)
-    ' Procedure purpose:  To replace "#" characters with blank value in particular range on "Export" tab
 
     Dim Cell_1 As String
     Dim Cell_2 As String
@@ -1522,8 +1522,8 @@ Public Sub RemoveHashCharacters(rng As Range)
     
 End Sub
 
+' Procedure purpose:  To replace "&&" with line breaks (VbCrLf) in certain range on the "Export" tab _
 Public Sub RestoreLineBreaks(rng As Range)
-    ' Procedure purpose:  To replace "&&" with line breaks (VbCrLf) in certain range on the "Export" tab _
     and to merge cells that were splitted due to max. field length (250)
     
     Dim Cell_1 As String
@@ -1565,8 +1565,8 @@ Public Sub RestoreLineBreaks(rng As Range)
     
 End Sub
 
+' Procedure purpose:  To set print area, header information (Query last refresh date & time) on the "Export" tab
 Public Sub SetPrintLayout(lRefreshDate As Double)
-    ' Procedure purpose:  To set print area, header information (Query last refresh date & time) on the "Export" tab
     
     Dim llastrow    As Long
     Dim rng         As Range
@@ -1652,8 +1652,8 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Option Explicit
+' Procedure purpose:  To enable SAP Analysis plug-in, reconnect/refresh all data sources to BW system
 Public Sub Workbook_open()
-    ' Procedure purpose:  To enable SAP Analysis plug-in, reconnect/refresh all data sources to BW system
     vFlag = 1
     
     Dim StartRow As Integer
@@ -1754,8 +1754,8 @@ Public Sub Workbook_open()
     
 End Sub
 
+' Procedure purpose:  To refresh data during switch between worksheets
 Public Sub Workbook_SheetActivate(ByVal Sh As Object)
-    ' Procedure purpose:  To refresh data during switch between worksheets
 
     vFlag = 1
     
@@ -1888,8 +1888,8 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
 
 End Sub
 
+' Procedure purpose:  To lock edition on export tabs and to validate data in input-ready fields _
 Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal target As Range)
-    ' Procedure purpose:  To lock edition on export tabs and to validate data in input-ready fields _
     (check max. field length, split values in cells per columns, replace line breaks with "&&")
 
     Dim CondOpt As String
