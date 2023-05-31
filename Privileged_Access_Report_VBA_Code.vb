@@ -624,7 +624,7 @@ Public Sub Columns_Visibility()
     Set lastcell = ActiveSheet.Cells(StartRow, ActiveSheet.Range("A" & StartRow).End(xlToRight).Column)
     lastColumn = Split(lastcell.Address, "$")(1)
     If lastcell.Value <> vbNullString Then
-        targetColumnLetter = Split(ActiveSheet.Cells(1, lastColumn).Address, "$")(1)
+        targetColumnLetter = Split(ActiveSheet.Cells(1, lastColumn).Offset(,1).Address, "$")(1)
     Else
         targetColumnLetter = Split(ActiveSheet.Cells(1, lastColumn).Address, "$")(1)
     End If
@@ -1639,10 +1639,6 @@ Public Sub ReplaceHeaderValue()
 End Sub
 
 
-
-
-
-
 ------------------
 ThisWorkbook.cls
 
@@ -1656,40 +1652,6 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Option Explicit
-'Private Sub Workbook_Activate()
-'    Application.CommandBars("Ply").Enabled = False
-'End Sub
-'Private Sub Workbook_Deactivate()
-'    Application.CommandBars("Ply").Enabled = True
-'End Sub
-'Private Sub Workbook_SheetDeactivate(ByVal Sh As Object)
-'    Dim ws As Worksheet
-'    Dim order() As Variant
-'    Dim i As Long
-'
-'    ReDim order(1 To ThisWorkbook.Worksheets.count) ' Resize the array to hold all sheet names
-'
-'    ' Loop through each worksheet and store its name in the array
-'    For Each ws In ThisWorkbook.Worksheets
-'        i = i + 1
-'        order(i) = ws.Name
-'    Next ws
-'
-'    ' Check if the current sheet's name matches its original position in the order array
-'    If Sh.Name <> order(Sh.Index) Then
-'        Application.EnableEvents = False ' Disable events to prevent recursive triggering
-'
-'        ' Find the correct position of the current sheet and move it accordingly
-'        If Application.Match(Sh.Name, order, False) = 1 Then
-'            Worksheets(order(1)).Move Before:=Worksheets(1)
-'        Else
-'            Sh.Move After:=Worksheets(order(Application.Match(Sh.Name, order, False) - 1))
-'        End If
-'
-'        Application.EnableEvents = True ' Enable events again
-'    End If
-'End Sub
-
 Public Sub Workbook_open()
     ' Procedure purpose:  To enable SAP Analysis plug-in, reconnect/refresh all data sources to BW system
     vFlag = 1
@@ -2067,7 +2029,3 @@ Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal target As Range)
         End If
     End If
 End Sub
-
-
-
-
