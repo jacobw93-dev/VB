@@ -1,4 +1,4 @@
-Privileged_Access_Report_VBA_Code.vb
+﻿Privileged_Access_Report_VBA_Code.vb
 
 ------------------
 Edit_CA.cls
@@ -15,8 +15,8 @@ Attribute VB_Exposed = True
 '@IgnoreModule UndeclaredVariable, UnassignedVariableUsage
 Option Explicit
 
-' Procedure purpose:  To reconnect/refresh data sources
 Private Sub Connect_CA_Click()
+    ' Procedure purpose:  To reconnect/refresh data sources
 
     Dim lResult As Long
     Dim lRet As Boolean
@@ -25,9 +25,9 @@ Private Sub Connect_CA_Click()
     Dim ds_concat As String
     Dim InfoBox As VbMsgBoxResult
     
-    On Error GoTo ErrorHandler
+    Dim ds_alias As String: ds_alias = "DS_3"
     
-    Const AckTime As Integer = 3
+    On Error GoTo ErrorHandler
     
     Call OnStart
     
@@ -56,7 +56,7 @@ Private Sub Connect_CA_Click()
         
         lResult = Application.Run("SAPLogOff", "True")
         lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
-        lResult = Application.Run("SAPExecuteCommand", "Refresh", "ALL")
+        lResult = Application.Run("SAPExecuteCommand", "Refresh", ds_alias)
         
         Call DataValidationList
         
@@ -75,8 +75,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To save data in Planning Query
 Private Sub Save_CA_Click()
+    ' Procedure purpose:  To save data in Planning Query
 
     Dim EndTime As Double
     Dim StartTime As Double
@@ -86,9 +86,7 @@ Private Sub Save_CA_Click()
     Dim InfoBox As VbMsgBoxResult
     
     On Error GoTo ErrorHandler
-    
-    Const AckTime As Integer = 3
-    
+
     Set wb = ThisWorkbook
     
     Call OnStart
@@ -104,7 +102,7 @@ Private Sub Save_CA_Click()
             lResult = Application.Run("SAPGetProperty", "HasChangedPlanData", ds_alias)
             If lResult = True Then
                 lResult = Application.Run("SAPExecuteCommand", "PlanDataSave")
-                lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
+                lResult = Application.Run("SAPExecuteCommand", "Restart", ds_alias)
             
                 Call DataValidationList
                 
@@ -144,8 +142,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To enable floating buttons
 Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
+    ' Procedure purpose:  To enable floating buttons
 
     On Error GoTo 0
     With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
@@ -172,8 +170,8 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '@IgnoreModule UndeclaredVariable
-' Procedure purpose:  To reconnect/refresh data sources
 Private Sub Connect_SP_Click()
+    ' Procedure purpose:  To reconnect/refresh data sources
 
     Dim InfoBox As VbMsgBoxResult
     Dim ds As String
@@ -182,9 +180,9 @@ Private Sub Connect_SP_Click()
     Dim lResult As Long
     Dim lRet As Boolean
     
-    On Error GoTo ErrorHandler
+    Dim ds_alias As String: ds_alias = "DS_5"
     
-    Const AckTime As Integer = 3
+    On Error GoTo ErrorHandler
     
     Call OnStart
     
@@ -213,7 +211,7 @@ Private Sub Connect_SP_Click()
         
         lResult = Application.Run("SAPLogOff", "True")
         lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
-        lResult = Application.Run("SAPExecuteCommand", "Refresh", "ALL")
+        lResult = Application.Run("SAPExecuteCommand", "Refresh", ds_alias)
         
         Call DataValidationList
         
@@ -233,8 +231,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To save data in Planning Query
 Private Sub Save_SP_Click()
+    ' Procedure purpose:  To save data in Planning Query
 
     Dim EndTime As Double
     Dim InfoBox As VbMsgBoxResult
@@ -244,8 +242,6 @@ Private Sub Save_SP_Click()
     Dim wb As Workbook
     
     On Error GoTo ErrorHandler
-    
-    Const AckTime As Integer = 3
     
     Set wb = ThisWorkbook
     
@@ -262,7 +258,7 @@ Private Sub Save_SP_Click()
             lResult = Application.Run("SAPGetProperty", "HasChangedPlanData", ds_alias)
             If lResult = True Then
                 lResult = Application.Run("SAPExecuteCommand", "PlanDataSave")
-                lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
+                lResult = Application.Run("SAPExecuteCommand", "Restart", ds_alias)
             
                 Call DataValidationList
                 
@@ -302,8 +298,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To enable floating buttons
 Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
+    ' Procedure purpose:  To enable floating buttons
 
     On Error GoTo 0
     With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
@@ -326,6 +322,7 @@ Global vFlag As Integer
 Public gErrorNumber As Long
 Public gErrorDescription As String
 Public gErrorSource As String
+Public Const AckTime As Integer = 3
 
 Public Declare PtrSafe Function CustomTimeOffMsgBox Lib "user32" Alias "MessageBoxTimeoutA" ( _
 ByVal xHwnd As LongPtr, _
@@ -336,24 +333,26 @@ ByVal xwlange As Long, _
 ByVal xTimeOut As Long) _
 As Long
 
-' Store the error details in global variables
 Public Sub HandleError()
+    ' Store the error details in global variables
     gErrorNumber = Err.Number
     gErrorDescription = Err.Description
     gErrorSource = Erl & ": " & Err.Source
     
-    ' Display or handle the error as per your requirements
-    Debug.Print "Error Number: " & gErrorNumber & vbNewLine & _
-           "Description: " & gErrorDescription & vbNewLine & _
-           "Source: " & gErrorSource, vbCritical, "Error"
+    If gErrorNumber <> 0 Then
+        ' Display or handle the error as per your requirements
+        MsgBox "Error Number: " & gErrorNumber & vbNewLine & _
+               "Description: " & gErrorDescription & vbNewLine & _
+               "Source: " & gErrorSource, vbCritical, "Error"
     
-    ' Reset the error object
-    Err.Clear
+        ' Reset the error object
+        Err.Clear
+    End If
     Exit Sub
 End Sub
 
-' Function purpose:  To determine first filled row and last filled column
 Public Function GetLastFilledColumnAndFirstFilledRow() As Variant
+    ' Function purpose:  To determine first filled row and last filled column
     
     Dim firstFilledRow As Long
     Dim lastFilledColumn As Long
@@ -393,8 +392,8 @@ Public Function TimedMsgBox( _
     
 End Function
 
-' Function purpose:  To evaluate if a worksheet is protected
 Public Function SheetProtected(TargetSheet As Worksheet) As Boolean
+    ' Function purpose:  To evaluate if a worksheet is protected
     
     On Error GoTo ErrorHandler
     
@@ -407,8 +406,8 @@ ErrorHandler:
     Call HandleError
 End Function
 
-' Procedure purpose:  To unlock all worksheets in this workbook
 Public Sub UnlockSheets()
+    ' Procedure purpose:  To unlock all worksheets in this workbook
     
     Dim wb          As Workbook
     Dim ws          As Worksheet
@@ -439,9 +438,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-
-' Procedure purpose:  To reconnect with the SAP data source
 Public Sub Reconnect()
+    ' Procedure purpose:  To reconnect with the SAP data source
     Dim lResult     As Long
     
     On Error GoTo ErrorHandler
@@ -461,8 +459,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To disable immediate calculations, screen updates, events, messages
 Public Sub OnStart()
+    ' Procedure purpose:  To disable immediate calculations, screen updates, events, messages
 
     On Error GoTo ErrorHandler
     
@@ -485,8 +483,8 @@ ErrorHandler:
     
 End Sub
 
-' Procedure purpose:  To enable immediate calculations, screen updates, events, messages
 Public Sub OnEnd()
+    ' Procedure purpose:  To enable immediate calculations, screen updates, events, messages
     
     On Error GoTo ErrorHandler
     
@@ -507,8 +505,8 @@ ErrorHandler:
     
 End Sub
 
-' Procedure purpose:  To add data validation list on certain range (Approval flag)
 Public Sub DataValidationList()
+    ' Procedure purpose:  To add data validation list on certain range (Approval flag)
     
     Dim cell As Range
     Dim firstRow As Long
@@ -582,8 +580,8 @@ ErrorHandler:
     
 End Sub
 
-' Procedure purpose:  To add comment on "Approval Flag" header
 Public Sub Comments()
+    ' Procedure purpose:  To add comment on "Approval Flag" header
 
     Dim cell As Range
     Dim firstRow As Long
@@ -638,8 +636,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To align columns
 Public Sub Alignment()
+    ' Procedure purpose:  To align columns
 
     Dim StartRow As String
     Dim cell As Range
@@ -708,8 +706,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To change columns visiblity
 Public Sub Columns_Visibility()
+    ' Procedure purpose:  To change columns visiblity
     
     On Error GoTo ErrorHandler
     
@@ -720,8 +718,8 @@ Public Sub Columns_Visibility()
     Dim searchRange As Range
     Dim targetColumn As Range
     Dim targetColumnLetter As String
-    Dim targetColumnSet As Range       ' Variable to hold each set of target column
-    Dim targetColumns As Collection    ' Store multiple sets of target columns
+    Dim targetColumnSet As Range                 ' Variable to hold each set of target column
+    Dim targetColumns As Collection              ' Store multiple sets of target columns
     Dim targetHeader As String
     Dim targetHeaderCell As Range
     
@@ -781,8 +779,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To replace "#" characters with blank value in particular range on "Export" tab
 Public Sub RemoveHashCharacters(rng As Range)
+    ' Procedure purpose:  To replace "#" characters with blank value in particular range on "Export" tab
 
     Dim Cell_1 As String
     Dim Cell_2 As String
@@ -824,8 +822,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To replace "&&" with line breaks (VbCrLf) in certain range on the "Export" tab _
 Public Sub RestoreLineBreaks(rng As Range)
+    ' Procedure purpose:  To replace "&&" with line breaks (VbCrLf) in certain range on the "Export" tab _
     and to merge cells that were splitted due to max. field length (250)
     
     On Error GoTo ErrorHandler
@@ -874,8 +872,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To set print area, header information (Query last refresh date & time) on the "Export" tab
 Public Sub SetPrintLayout(lRefreshDate As Double)
+    ' Procedure purpose:  To set print area, header information (Query last refresh date & time) on the "Export" tab
     
     Dim llastrow    As Long
     Dim rng         As Range
@@ -984,8 +982,8 @@ Attribute VB_Exposed = True
 '@IgnoreModule UndeclaredVariable, UnassignedVariableUsage
 Option Explicit
 
-' Procedure purpose:  To reconnect/refresh data sources
 Private Sub Connect_CA_Click()
+    ' Procedure purpose:  To reconnect/refresh data sources
 
     Dim lResult As Long
     Dim lRet As Boolean
@@ -994,9 +992,9 @@ Private Sub Connect_CA_Click()
     Dim ds_concat As String
     Dim InfoBox As VbMsgBoxResult
     
-    On Error GoTo ErrorHandler
+    Dim ds_alias As String: ds_alias = "DS_3"
     
-    Const AckTime As Integer = 3
+    On Error GoTo ErrorHandler
     
     Call OnStart
     
@@ -1025,7 +1023,7 @@ Private Sub Connect_CA_Click()
         
         lResult = Application.Run("SAPLogOff", "True")
         lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
-        lResult = Application.Run("SAPExecuteCommand", "Refresh", "ALL")
+        lResult = Application.Run("SAPExecuteCommand", "Refresh", ds_alias)
         
         Call DataValidationList
         
@@ -1044,8 +1042,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To save data in Planning Query
 Private Sub Save_CA_Click()
+    ' Procedure purpose:  To save data in Planning Query
 
     Dim EndTime As Double
     Dim StartTime As Double
@@ -1055,9 +1053,7 @@ Private Sub Save_CA_Click()
     Dim InfoBox As VbMsgBoxResult
     
     On Error GoTo ErrorHandler
-    
-    Const AckTime As Integer = 3
-    
+
     Set wb = ThisWorkbook
     
     Call OnStart
@@ -1073,7 +1069,7 @@ Private Sub Save_CA_Click()
             lResult = Application.Run("SAPGetProperty", "HasChangedPlanData", ds_alias)
             If lResult = True Then
                 lResult = Application.Run("SAPExecuteCommand", "PlanDataSave")
-                lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
+                lResult = Application.Run("SAPExecuteCommand", "Restart", ds_alias)
             
                 Call DataValidationList
                 
@@ -1113,8 +1109,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To enable floating buttons
 Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
+    ' Procedure purpose:  To enable floating buttons
 
     On Error GoTo 0
     With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
@@ -1141,8 +1137,8 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 '@IgnoreModule UndeclaredVariable
-' Procedure purpose:  To reconnect/refresh data sources
 Private Sub Connect_SP_Click()
+    ' Procedure purpose:  To reconnect/refresh data sources
 
     Dim InfoBox As VbMsgBoxResult
     Dim ds As String
@@ -1151,9 +1147,9 @@ Private Sub Connect_SP_Click()
     Dim lResult As Long
     Dim lRet As Boolean
     
-    On Error GoTo ErrorHandler
+    Dim ds_alias As String: ds_alias = "DS_5"
     
-    Const AckTime As Integer = 3
+    On Error GoTo ErrorHandler
     
     Call OnStart
     
@@ -1182,7 +1178,7 @@ Private Sub Connect_SP_Click()
         
         lResult = Application.Run("SAPLogOff", "True")
         lResult = Application.Run("SAPSetRefreshBehaviour", "Off")
-        lResult = Application.Run("SAPExecuteCommand", "Refresh", "ALL")
+        lResult = Application.Run("SAPExecuteCommand", "Refresh", ds_alias)
         
         Call DataValidationList
         
@@ -1202,8 +1198,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To save data in Planning Query
 Private Sub Save_SP_Click()
+    ' Procedure purpose:  To save data in Planning Query
 
     Dim EndTime As Double
     Dim InfoBox As VbMsgBoxResult
@@ -1213,8 +1209,6 @@ Private Sub Save_SP_Click()
     Dim wb As Workbook
     
     On Error GoTo ErrorHandler
-    
-    Const AckTime As Integer = 3
     
     Set wb = ThisWorkbook
     
@@ -1231,7 +1225,7 @@ Private Sub Save_SP_Click()
             lResult = Application.Run("SAPGetProperty", "HasChangedPlanData", ds_alias)
             If lResult = True Then
                 lResult = Application.Run("SAPExecuteCommand", "PlanDataSave")
-                lResult = Application.Run("SAPExecuteCommand", "Restart", "ALL")
+                lResult = Application.Run("SAPExecuteCommand", "Restart", ds_alias)
             
                 Call DataValidationList
                 
@@ -1271,8 +1265,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To enable floating buttons
 Private Sub Worksheet_SelectionChange(ByVal target As Excel.Range)
+    ' Procedure purpose:  To enable floating buttons
 
     On Error GoTo 0
     With Cells(Windows(1).ScrollRow, Windows(1).ScrollColumn)
@@ -1295,6 +1289,7 @@ Global vFlag As Integer
 Public gErrorNumber As Long
 Public gErrorDescription As String
 Public gErrorSource As String
+Public Const AckTime As Integer = 3
 
 Public Declare PtrSafe Function CustomTimeOffMsgBox Lib "user32" Alias "MessageBoxTimeoutA" ( _
 ByVal xHwnd As LongPtr, _
@@ -1305,24 +1300,26 @@ ByVal xwlange As Long, _
 ByVal xTimeOut As Long) _
 As Long
 
-' Store the error details in global variables
 Public Sub HandleError()
+    ' Store the error details in global variables
     gErrorNumber = Err.Number
     gErrorDescription = Err.Description
     gErrorSource = Erl & ": " & Err.Source
     
-    ' Display or handle the error as per your requirements
-    Debug.Print "Error Number: " & gErrorNumber & vbNewLine & _
-           "Description: " & gErrorDescription & vbNewLine & _
-           "Source: " & gErrorSource, vbCritical, "Error"
+    If gErrorNumber <> 0 Then
+        ' Display or handle the error as per your requirements
+        MsgBox "Error Number: " & gErrorNumber & vbNewLine & _
+               "Description: " & gErrorDescription & vbNewLine & _
+               "Source: " & gErrorSource, vbCritical, "Error"
     
-    ' Reset the error object
-    Err.Clear
+        ' Reset the error object
+        Err.Clear
+    End If
     Exit Sub
 End Sub
 
-' Function purpose:  To determine first filled row and last filled column
 Public Function GetLastFilledColumnAndFirstFilledRow() As Variant
+    ' Function purpose:  To determine first filled row and last filled column
     
     Dim firstFilledRow As Long
     Dim lastFilledColumn As Long
@@ -1362,8 +1359,8 @@ Public Function TimedMsgBox( _
     
 End Function
 
-' Function purpose:  To evaluate if a worksheet is protected
 Public Function SheetProtected(TargetSheet As Worksheet) As Boolean
+    ' Function purpose:  To evaluate if a worksheet is protected
     
     On Error GoTo ErrorHandler
     
@@ -1376,8 +1373,8 @@ ErrorHandler:
     Call HandleError
 End Function
 
-' Procedure purpose:  To unlock all worksheets in this workbook
 Public Sub UnlockSheets()
+    ' Procedure purpose:  To unlock all worksheets in this workbook
     
     Dim wb          As Workbook
     Dim ws          As Worksheet
@@ -1408,9 +1405,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-
-' Procedure purpose:  To reconnect with the SAP data source
 Public Sub Reconnect()
+    ' Procedure purpose:  To reconnect with the SAP data source
     Dim lResult     As Long
     
     On Error GoTo ErrorHandler
@@ -1430,8 +1426,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To disable immediate calculations, screen updates, events, messages
 Public Sub OnStart()
+    ' Procedure purpose:  To disable immediate calculations, screen updates, events, messages
 
     On Error GoTo ErrorHandler
     
@@ -1454,8 +1450,8 @@ ErrorHandler:
     
 End Sub
 
-' Procedure purpose:  To enable immediate calculations, screen updates, events, messages
 Public Sub OnEnd()
+    ' Procedure purpose:  To enable immediate calculations, screen updates, events, messages
     
     On Error GoTo ErrorHandler
     
@@ -1476,8 +1472,8 @@ ErrorHandler:
     
 End Sub
 
-' Procedure purpose:  To add data validation list on certain range (Approval flag)
 Public Sub DataValidationList()
+    ' Procedure purpose:  To add data validation list on certain range (Approval flag)
     
     Dim cell As Range
     Dim firstRow As Long
@@ -1551,8 +1547,8 @@ ErrorHandler:
     
 End Sub
 
-' Procedure purpose:  To add comment on "Approval Flag" header
 Public Sub Comments()
+    ' Procedure purpose:  To add comment on "Approval Flag" header
 
     Dim cell As Range
     Dim firstRow As Long
@@ -1607,8 +1603,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To align columns
 Public Sub Alignment()
+    ' Procedure purpose:  To align columns
 
     Dim StartRow As String
     Dim cell As Range
@@ -1677,8 +1673,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To change columns visiblity
 Public Sub Columns_Visibility()
+    ' Procedure purpose:  To change columns visiblity
     
     On Error GoTo ErrorHandler
     
@@ -1689,8 +1685,8 @@ Public Sub Columns_Visibility()
     Dim searchRange As Range
     Dim targetColumn As Range
     Dim targetColumnLetter As String
-    Dim targetColumnSet As Range       ' Variable to hold each set of target column
-    Dim targetColumns As Collection    ' Store multiple sets of target columns
+    Dim targetColumnSet As Range                 ' Variable to hold each set of target column
+    Dim targetColumns As Collection              ' Store multiple sets of target columns
     Dim targetHeader As String
     Dim targetHeaderCell As Range
     
@@ -1750,8 +1746,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To replace "#" characters with blank value in particular range on "Export" tab
 Public Sub RemoveHashCharacters(rng As Range)
+    ' Procedure purpose:  To replace "#" characters with blank value in particular range on "Export" tab
 
     Dim Cell_1 As String
     Dim Cell_2 As String
@@ -1793,8 +1789,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To replace "&&" with line breaks (VbCrLf) in certain range on the "Export" tab _
 Public Sub RestoreLineBreaks(rng As Range)
+    ' Procedure purpose:  To replace "&&" with line breaks (VbCrLf) in certain range on the "Export" tab _
     and to merge cells that were splitted due to max. field length (250)
     
     On Error GoTo ErrorHandler
@@ -1843,8 +1839,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To set print area, header information (Query last refresh date & time) on the "Export" tab
 Public Sub SetPrintLayout(lRefreshDate As Double)
+    ' Procedure purpose:  To set print area, header information (Query last refresh date & time) on the "Export" tab
     
     Dim llastrow    As Long
     Dim rng         As Range
@@ -1951,8 +1947,8 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 Option Explicit
 
-' Procedure purpose:  To enable SAP Analysis plug-in, reconnect/refresh all data sources to BW system
 Public Sub Workbook_open()
+    ' Procedure purpose:  To enable SAP Analysis plug-in, reconnect/refresh all data sources to BW system
     vFlag = 1
     
     Dim StartRow As Integer
@@ -2058,8 +2054,8 @@ ErrorHandler:
     
 End Sub
 
-' Procedure purpose:  To refresh data during switch between worksheets
 Public Sub Workbook_SheetActivate(ByVal Sh As Object)
+    ' Procedure purpose:  To refresh data during switch between worksheets
 
     vFlag = 1
     
@@ -2081,8 +2077,6 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
     
     result = GetLastFilledColumnAndFirstFilledRow()
     StartRow = result(1)
-    
-    Const AckTime As Integer = 3
     
     Call OnStart
     
@@ -2184,7 +2178,10 @@ Public Sub Workbook_SheetActivate(ByVal Sh As Object)
         AppActivate Application.Caption
         DoEvents
         lResult = Application.Run("SAPLogOff", "True")
-        lResult = Application.Run("SAPExecuteCommand", "Refresh", "All")
+        lResult = Application.Run("SAPGetProperty", "IsDataSourceActive", lDS_Alias)
+        If lResult = False Then
+            lResult = Application.Run("SAPExecuteCommand", "Refresh", lDS_Alias)
+        End If
     End If
     
     Call ReplaceHeaderValue
@@ -2199,8 +2196,8 @@ ErrorHandler:
     Call HandleError
 End Sub
 
-' Procedure purpose:  To lock edition on export tabs and to validate data in input-ready fields _
 Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal target As Range)
+    ' Procedure purpose:  To lock edition on export tabs and to validate data in input-ready fields _
     (check max. field length, split values in cells per columns, replace line breaks with "&&")
 
     Dim CondOpt As String
@@ -2223,29 +2220,24 @@ Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal target As Range)
     Const LineSeparator As String = "&&"
     Const Col_1 As Integer = 19
     Const Col_2 As Integer = 22
+ 
+    If vFlag = 0 Then
+        Call OnStart
+        If Sh.Name Like "Export*" Or Sh.Name Like "Changelog*" Or Sh.Name = "DevAccess" Then
         
-    If Sh.Name Like "Export*" Or Sh.Name Like "Changelog*" Or Sh.Name = "DevAccess" Then
-        If vFlag = 0 Then
-            Call OnStart
             Set x = ActiveSheet.UsedRange
             Set ValidatedCells = Intersect(target, Range(x.Address))
             If Not ValidatedCells Is Nothing Then
                 For Each cell In ValidatedCells
                     result = MsgBox("Attempted to change the value of the cell: " & target.Address, vbExclamation, "Warning")
                     If result = vbOK Then
-                        Application.Undo
-                        Call OnEnd
-                        Exit Sub
+                        GoTo UndoAction
                     End If
                 Next cell
             End If
-            Call OnEnd
         End If
-    End If
     
-    If Sh.Name Like "Edit*" Then
-        If vFlag = 0 Then
-            Call OnStart
+        If Sh.Name Like "Edit*" Then
                 
             result = GetLastFilledColumnAndFirstFilledRow()
             LastCol = Split(Cells(1, result(0)).Address, "$")(1)
@@ -2259,14 +2251,15 @@ Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal target As Range)
                 Set ValidatedCells = Intersect(target, target.Parent.Range("S" & StartRow & ":T" & llastrow, "V" & StartRow & ":X" & llastrow))
                 Set ValidatedCells_2 = Intersect(target, Union(target.Parent.Range("A2" & ":R" & llastrow), target.Parent.Range("A" & StartRow & ":" & LastCol & StartRow)))
             End If
-
+'
+'            Debug.Print (ValidatedCells.Address)
+'            Stop
+            
             If Not ValidatedCells_2 Is Nothing Then
                 For Each cell In ValidatedCells_2
                     result = MsgBox("Attempted to change the value of the cell: " & target.Address, vbExclamation, "Warning")
                     If result = vbOK Then
-                        Application.Undo
-                        Call OnEnd
-                        Exit Sub
+                        GoTo UndoAction
                     End If
                 Next cell
             End If
@@ -2278,7 +2271,7 @@ Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal target As Range)
                     If Len(NewCellValue) > 250 Then
                         NewCellValue2 = Right(NewCellValue, Len(NewCellValue) - StringLenLim)
                     End If
-                    If (cell.Column = Col_1 - 1 Or cell.Column = Col_2 - 1) Then
+                    If (cell.Column = Col_1 Or cell.Column = Col_2) Then
                         CurLenLim = StringLenLim * 2
                         CondOpt = " and split it into 2 columns "
                     Else
@@ -2301,11 +2294,8 @@ Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal target As Range)
                             NewCellValue = Left(NewCellValue, StringLenLim)
                             cell.Value = NewCellValue
                         Else
-                            Application.Undo
-                            Call OnEnd
-                            Exit Sub
+                            GoTo UndoAction
                         End If
-                        Exit Sub
                     ElseIf (Len(NewCellValue) > StringLenLim And Len(NewCellValue2) <= StringLenLim And Not (cell.Column = Col_1 And cell.Column = Col_2)) Then
                         result = MsgBox(Mssg & _
                                         vbCrLf & vbCrLf & _
@@ -2315,11 +2305,8 @@ Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal target As Range)
                             NewCellValue = Left(NewCellValue, StringLenLim)
                             cell.Value = NewCellValue
                         Else
-                            Application.Undo
-                            Call OnEnd
-                            Exit Sub
+                            GoTo UndoAction
                         End If
-                        Exit Sub
                     ElseIf (Len(NewCellValue) > StringLenLim And Len(NewCellValue2) > StringLenLim And (cell.Column = Col_1 Or cell.Column = Col_2)) Then
                         result = MsgBox(Mssg & _
                                         vbCrLf & vbCrLf & _
@@ -2330,11 +2317,8 @@ Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal target As Range)
                             NewCellValue = Left(NewCellValue, StringLenLim)
                             cell.Value = NewCellValue
                         Else
-                            Application.Undo
-                            Call OnEnd
-                            Exit Sub
+                            GoTo UndoAction
                         End If
-                        Exit Sub
                     ElseIf (Len(NewCellValue) > StringLenLim And Len(NewCellValue2) > StringLenLim And Not (cell.Column = Col_1 And cell.Column = Col_2)) Then
                         result = MsgBox(Mssg & _
                                         vbCrLf & vbCrLf & _
@@ -2344,21 +2328,26 @@ Private Sub Workbook_SheetChange(ByVal Sh As Object, ByVal target As Range)
                             NewCellValue = Left(NewCellValue, StringLenLim)
                             cell.Value = NewCellValue
                         Else
-                            Application.Undo
-                            Call OnEnd
-                            Exit Sub
+                            GoTo UndoAction
                         End If
-                        Exit Sub
                     End If
-                            
+                Call OnEnd
+                cell.Offset(, 1).Value = cell.Offset(, 1).Value
+                Call OnStart
                 Next cell
             End If
-            Call OnEnd
+            Call Alignment
         End If
+    Call OnEnd
     End If
     
     Exit Sub
-    
+ 
+UndoAction:
+    Application.Undo
+    Call OnEnd
+    Exit Sub
+
 ErrorHandler:
     ' Call the global error handling procedure
     Call HandleError
